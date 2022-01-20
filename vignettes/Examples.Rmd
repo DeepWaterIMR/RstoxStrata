@@ -1,0 +1,15 @@
+---
+title: "Gallery of strata system examples"
+author: "Mikko Vihtakari (Institute of Marine Research)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Examples}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+```

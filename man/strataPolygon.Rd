@@ -9,9 +9,9 @@ strataPolygon(
   depths,
   boundary,
   geostrata = NULL,
-  drop.crumbs = NULL,
-  remove.holes = NULL,
-  precise = FALSE
+  fragment.area = NULL,
+  bathy.crs = 4326,
+  silent = FALSE
 )
 }
 \arguments{
@@ -23,17 +23,17 @@ strataPolygon(
 
 \item{geostrata}{A data frame defining the minimum and maximum longitude and latitude for geographically bounded strata. The data frame columns must be ordered as \code{lon.min, lon.max, lat.min, lat.max}. Column names do not matter. Each row in the data frame will be interpreted as separate geographically bounded strata. Use \code{NULL} to ignore geostrata.}
 
-\item{drop.crumbs}{Single numeric value specifying a threshold (area in km2) for disconnected polygons which should be removed from the strata. Set to \code{NULL} to bypass the removal. Uses the \link[smoothr]{drop_crumbs} function.}
+\item{fragment.area}{Single numeric value specifying a threshold (area in km2) for disconnected polygons and holes which should be removed from the strata. Set to \code{NULL} to bypass the removal.}
 
-\item{remove.holes}{Single numeric value specifying a threshold (area in km2) for holes which should be removed from the strata. Set to \code{NULL} to bypass the removal.}
+\item{bathy.crs}{The \link[sf:st_crs]{coordinate reference system} for the \code{bathy} raster. Defaults to decimal degrees.}
 
-\item{precise}{Logical indicating whether a more precise \link[smoothr]{fill_holes} function should be used over less precise but a lot quicker \link[nngeo]{st_remove_holes}.}
+\item{silent}{A logical indicating whether the function should be run without returning messages from the operations.}
 }
 \value{
-An \link[sf]{sf} object containing the estimated strata and information for them including areas. The strata are returned as decimal degrees (EPGS:4326).
+A list of length two containing \link[sf]{sf} objects of the estimated strata with information for them, including areas, and geostrata polygons.
 }
 \description{
-A helper function to define strata for stock assesment from GEBCO and ETOPO bathymetry grids.
+A helper function to define strata for stock assessment from GEBCO and ETOPO bathymetry grids.
 }
 \details{
 Uses \href{https://www.gebco.net/data_and_products/gridded_bathymetry_data/}{GEBCO} or \href{https://www.ngdc.noaa.gov/mgg/global/}{ETOPO1} bathymetry grids to define the depth strata. Download the desired grid from the links. The bathymetry grids must be in NetCDF format and defined using decimal degrees.

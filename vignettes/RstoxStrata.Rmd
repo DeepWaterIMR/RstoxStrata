@@ -1,0 +1,34 @@
+---
+title: "Estimation of strata with RstoxStrata"
+author: "Mikko Vihtakari (Institute of Marine Research)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{RstoxStrata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+```
+
+# Introduction
+
+Fisheries assessment models use catch data and population trends to estimate the fishing quota (Total Allowable Catch, TAC), i.e., the safe or optimal biomass to remove from the population to ensure population continuity (sustainability). While catch data primarily govern the absolute levels in TAC estimates, population trends dictate the relative changes in TAC from year to year and help the assessment model differentiate fishing effort- and efficiency-related catch variations from actual population fluctuations. Therefore, estimating population trends is integral to fisheries assessment and can have considerable economic and ecologic consequences.  
+
+Estimating population trends requires deciphering how much fish there is in the sea, commonly done using survey indices tailored for a particular species, region, and sampling setup. In essence, these survey indices are estimated by summing up numbers or weights of fish within areas called strata. The strata model distribution of a stock within a particular region of interest, often delimited by political or population boundaries. Most survey indices use multiple strata, assuming that the abundance of a species, population structure, or sampling setup significantly differs within the region of interest. The formula for estimating the number (or weight) of fish within a stratum for gear that covers an area, such as trawls, multiplies an average number of fish per areal unit by area of the stratum. Since the area is a multiplier, it considerably impacts the outcome. Imprecision in the areal estimation of strata or missing samples within a stratum may significantly affect the estimated population trends and hence TAC. 
+
+Depth is among the best factors to describe the distribution of fish species [REFS]. Consequently, bottom depth intervals are commonly incorporated into strata to model the vertical distribution of a species. Using bottom depth can lead to higher imprecision in areal estimation for species that inhabit narrow depth ranges along the continental slopes, such as the Greenland halibut. Imprecision in the areal estimation stemming from poorly charted bathymetry or too low resolution can be an order of magnitude and directly proportional to survey index estimates. 
+
+Here we discuss pitfalls in making strata for survey indices and study the consequences of filtering disconnected regions from strata using synthetic populations and Northeast Arctic Greenland halibut as example data. We suggest a transparent framework to estimate strata from bathymetric grid data programmed to an R package called RstoxStrata, which is integrated into the StoX software for survey index calculation. While the framework is applied to bottom depth, it can be used for any gridded spatial data such as surface temperature, salinity, or modeled prey density. 
+
+# Material and methods
+
+The proposed way of defining strata described here attempts to simplify the strata making where possible. Further, the process is intended to be transparent and reproducible. The distribution of a species is modeled using two components: using two components: 1) geographic regions (rectangles) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution.  The depth data are acquired from an online database, [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2020 grid, in this document.
+
+
+
+- Continuous strata
+- Removal of crumbs and holes
