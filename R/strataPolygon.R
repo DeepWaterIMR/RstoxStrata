@@ -16,7 +16,7 @@
 #' @export
 
 ## Developmental code
-# bathy = link; depths = depths.vec; boundary = boundary.vec; geostrata = geostrata.df; fragment.area = 1e4; bathy.crs = 4326; silent = FALSE
+# bathy = link; depths = depths.vec; boundary = boundary.vec; geostrata = geostrata.df; fragment.area = 100; bathy.crs = 4326; silent = FALSE
 strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.area = NULL, bathy.crs = 4326, silent = FALSE) {
 
   ## General checks ####
@@ -28,7 +28,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   ## Set the counter
 
-  pb <- utils::txtProgressBar(min = 1, max = 13 + nrow(geostrata) + nrow(cut_df), style = 3)
+  pb <- utils::txtProgressBar(min = 1, max = 14 + nrow(geostrata) + length(depths.vec), style = 3)
   utils::setTxtProgressBar(pb, 1)
 
   ### Bathy argument
@@ -98,7 +98,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
     }
   }
 
-  ## Open raster ####
+  ## Open raster ###
 
   utils::setTxtProgressBar(pb, 2)
 
@@ -135,7 +135,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   utils::setTxtProgressBar(pb, 4)
 
-  ## Reclassify raster ###
+  ## Cut data frame ###
 
   if(!raster) ras <- stars::st_as_stars(ras) # This step is time and memory consuming. Optimally done after reclassification
 
@@ -144,6 +144,12 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   if(all(depths >= 0)) depths <- sort(-1 * depths)
 
   depths <- c(-1e5, depths, 1e5)
+
+  # if(raster::minValue(ras) > min(depths)) {
+  #   depths <- c(depths, 1e5)
+  # } else {
+  #
+  # }
 
   cut_int <- paste(abs(depths[-1]), abs(depths[-length(depths)]), sep = "-")
 
@@ -238,11 +244,18 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   utils::setTxtProgressBar(pb, 6 + nrow(cut_df))
 
-  pol <- lapply(1:(nrow(pol)-1), function(i) {
+  pol2 <- lapply(1:(nrow(pol)-1), function(i) {
     rmapshaper::ms_erase(pol[i,], pol[i+1,])
-  })
+  }) %>% dplyr::bind_rows()
 
-  pol <- dplyr::bind_rows(pol)
+  if(!all(cut_df[cut_df$average < 1.2e4 & cut_df$average > - 9e3, "average"] %in% pol2$average)) {
+    pol <- dplyr::bind_rows(pol2,
+                     pol %>%
+                       dplyr::filter(average < 1.2e4, average > - 9e3, !average %in% pol2$average)
+    ) %>% dplyr::arrange(average)
+  } else {
+    pol <- pol2
+  }
 
   utils::setTxtProgressBar(pb, 7 + nrow(cut_df))
 

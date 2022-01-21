@@ -13,3 +13,37 @@ vignette: >
 library(knitr)
 knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 ```
+
+# Setup
+
+```{r}
+link <- "../../../../GIS/GEBCO bathymetry/GEBCO_2020/GEBCO_2020.nc" # Link to bathymetry data
+```
+
+# Examples
+
+## Greater argentine in North Sea
+
+```{r}
+geostrata.df <- data.frame(lon.min = c(3.2, 3.2, 7), 
+                           lon.max = c(5.4, 7, 13), 
+                           lat.min = c(59, 57, 57), 
+                           lat.max = c(60, 59, 59.2)
+)
+
+depths.vec <- c(100, 200, 300, 500, 1000)
+
+boundary.vec <- c(3, 13, 57, 61)
+
+## Strata polygons vs. stations ####
+
+plot(strataPolygon(
+  bathy = link, 
+  depths = depths.vec, 
+  boundary = boundary.vec,
+  geostrata = geostrata.df,
+  fragment.area = 1000
+)$strata[1])
+
+```
+
