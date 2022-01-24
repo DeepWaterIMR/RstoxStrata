@@ -3,6 +3,6 @@
 }
 
 # Define global variables
-utils::globalVariables(c("area.km2", "nautical_mile", ".", ".data", "area", "average", "from", "geostrata.df", "geostrata.name", "to", "geometry"))
+utils::globalVariables(c("area.km2", "nautical_mile", ".", ".data", "area", "average", "from", "geostrata.df", "geostrata.name", "to", "geometry", "interval"))
 
 

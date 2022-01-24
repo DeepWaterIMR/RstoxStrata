@@ -28,7 +28,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   ## Set the counter
 
-  pb <- utils::txtProgressBar(min = 1, max = 14 + nrow(geostrata) + length(depths.vec), style = 3)
+  pb <- utils::txtProgressBar(min = 1, max = 14 + nrow(geostrata) + length(depths), style = 3)
   utils::setTxtProgressBar(pb, 1)
 
   ### Bathy argument
@@ -66,6 +66,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   }
 
   if(is.vector(boundary) & class(boundary) %in% c("numeric", "integer") & length(boundary) == 4 & is.null(names(boundary))) {
+    if(boundary[1] > boundary[2]) boundary <- boundary[c(2,1,3,4)] # correct wrong lon order
+    if(boundary[3] > boundary[4]) boundary <- boundary[c(1,2,4,3)] # correct wrong lat order
     names(boundary) <- c("xmin", "xmax", "ymin", "ymax")
   }
 
@@ -103,14 +105,19 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   utils::setTxtProgressBar(pb, 2)
 
   if(raster) {
-    ras <- raster::raster(bathy)
+    ras <- suppressMessages(raster::raster(bathy))
   } else {
     ras <- stars::read_stars(bathy)
   }
 
   if(is.na(sf::st_crs(ras))) {
     if(!silent) message("bathy crs set to ", bathy.crs)
-    ras <- ras %>% sf::st_set_crs(bathy.crs)
+
+    if(raster) {
+      raster::crs(ras) <- paste0("EPSG:", bathy.crs)
+    } else {
+      ras <- ras %>% sf::st_set_crs(bathy.crs)
+    }
   }
 
   if(!sf::st_is_longlat(ras)) {
@@ -173,8 +180,11 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
     sf::st_set_crs(sf::st_crs(ras))
 
   pol$area <- sf::st_area(pol)
-  pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
-  pol <- smoothr::fill_holes(pol, units::set_units(fragment.area, "km^2", mode = "standard"))
+
+  if(!is.null(fragment.area)) {
+    pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
+    pol <- smoothr::fill_holes(pol, units::set_units(fragment.area, "km^2", mode = "standard"))
+  }
 
   pold <- pol
 
@@ -198,8 +208,10 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
     pol$area <- sf::st_area(pol)
 
+    if(!is.null(fragment.area)) {
     pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
     pol <- smoothr::fill_holes(pol, units::set_units(fragment.area, "km^2", mode = "standard"))
+    }
 
     pol
   })
@@ -223,8 +235,10 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   pol$area <- sf::st_area(pol)
 
+  if(!is.null(fragment.area)) {
   pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
   # pol <- smoothr::fill_holes(pol, units::set_units(1, "km^2", mode = "standard"))
+  }
 
   poll <- pol
 
@@ -250,8 +264,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   if(!all(cut_df[cut_df$average < 1.2e4 & cut_df$average > - 9e3, "average"] %in% pol2$average)) {
     pol <- dplyr::bind_rows(pol2,
-                     pol %>%
-                       dplyr::filter(average < 1.2e4, average > - 9e3, !average %in% pol2$average)
+                            pol %>%
+                              dplyr::filter(average < 1.2e4, average > - 9e3, !average %in% pol2$average)
     ) %>% dplyr::arrange(average)
   } else {
     pol <- pol2
@@ -340,6 +354,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   ## Return
 
-  list(strata = pol, geostrata = geopols)
+  out <- list(strata = pol, geostrata = geopols)
+  class(out) <- append("strataPolygon", class(out))
+  out
 
 }

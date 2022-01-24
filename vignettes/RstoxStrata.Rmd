@@ -29,6 +29,13 @@ Here we discuss pitfalls in making strata for survey indices and study the conse
 The proposed way of defining strata described here attempts to simplify the strata making where possible. Further, the process is intended to be transparent and reproducible. The distribution of a species is modeled using two components: using two components: 1) geographic regions (rectangles) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution.  The depth data are acquired from an online database, [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2020 grid, in this document.
 
 
+Geostrata
+
+Depths vector and bathymetry
+
+Boundary vector
+
+strataPolygon object, a list with **strata** and **geostrata** sf polygon objects. 
 
 - Continuous strata
 - Removal of crumbs and holes
