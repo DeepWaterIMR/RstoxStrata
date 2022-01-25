@@ -3,7 +3,7 @@
 #' @param bathy String giving the path to the bathymetry NetCDF file.
 #' @param depths Numeric vector giving the cut points for depth strata (see \code{\link[base]{cut}}. Data outside the cut range will be dropped. Use limits of length two exceeding the depths of the region to avoid depth categorization (\code{c(0, 1000)} for instance).
 #' @param boundary A \link[sf]{st_polygon} object, text string defining the file path to a spatial polygon or a numeric vector of length 4 giving the boundaries for the overall region. Should be given as decimal degrees. If numeric vector, the first element defines the minimum longitude, the second element the maximum longitude, the third element the minimum latitude and the fourth element the maximum latitude of the bounding box.
-#' @param geostrata A data frame defining the minimum and maximum longitude and latitude for geographically bounded strata. The data frame columns must be ordered as \code{lon.min, lon.max, lat.min, lat.max}. Column names do not matter. Each row in the data frame will be interpreted as separate geographically bounded strata. Use \code{NULL} to ignore geostrata.
+#' @param geostrata A data frame defining the minimum and maximum longitude and latitude for geographically bounded strata. The data frame has to have four numeric columns and optionally one character or factor column. The character or factor column defines the names for geostrata, the default being \code{LETTERS[1:nrow(geostrata)]. The numeric columns must be ordered as \code{lon.min, lon.max, lat.min, lat.max}. Column names do not matter. Each row in the data frame will be interpreted as separate geographically bounded strata. Use \code{NULL} to ignore geostrata.
 #' @param fragment.area Single numeric value specifying a threshold (area in km2) for disconnected polygons and holes which should be removed from the strata. Set to \code{NULL} to bypass the removal.
 #' @param bathy.crs The \link[sf:st_crs]{coordinate reference system} for the \code{bathy} raster. Defaults to decimal degrees.
 #' @param silent A logical indicating whether the function should be run without returning messages from the operations.
@@ -87,8 +87,15 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
                               lat.max = tmp["ymax"])
     }
   } else {
-    if(!(is.data.frame(geostrata) & ncol(geostrata) == 4)) {
-      stop("The geostrata argument has to be a data.frame with 4 columns.")
+    if(is.data.frame(geostrata) & ncol(geostrata) == 5) {
+      name.col <- which(sapply(geostrata, class) %in% c("character", "factor"))
+
+      geostrata.names <- geostrata[, name.col]
+      geostrata <- geostrata[, -name.col]
+    } else if(is.data.frame(geostrata) & ncol(geostrata) == 4) {
+      geostrata.names <- LETTERS[1:nrow(geostrata)]
+    } else {
+      stop("The geostrata argument has to be a data.frame with 4 or 5 columns.")
     }
   }
 
@@ -302,8 +309,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
       sf::st_as_sfc() %>%
       sf::st_set_crs(value = 4326) %>%
       sf::st_sf() %>%
-      dplyr::mutate(geostrata.name = LETTERS[i]) %>%
-      cbind(geostrata.df[i,]) %>%
+      dplyr::mutate(geostrata.name = geostrata.names[i]) %>%
+      cbind(geostrata[i,]) %>%
       smoothr::densify()
 
     out <- sf::st_intersection(pol, geopol) %>% suppressMessages() %>% suppressWarnings()

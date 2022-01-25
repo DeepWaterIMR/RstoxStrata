@@ -16,9 +16,25 @@ plotGeostrata <- function(geostrata, plot = TRUE, ...) {
   suppressMessages(sf::sf_use_s2(FALSE))
   on.exit({suppressMessages(sf::sf_use_s2(s2_mode))})
 
+  ## Checks
+
+  if(!(is.data.frame(geostrata) & ncol(geostrata) %in% 4:5)) {
+    stop("The geostrata argument has to be a data.frame with 4 or 5 columns.")
+  }
+
+  if(ncol(geostrata) == 5) {
+    name.col <- which(sapply(geostrata, class) %in% c("character", "factor"))
+
+    geostrata.names <- geostrata[, name.col]
+    geostrata <- geostrata[, -name.col]
+  } else{
+    geostrata.names <- LETTERS[1:nrow(geostrata)]
+  }
+
   ## Formulate geostrata as polygons
 
   geopols <- lapply(1:nrow(geostrata), function(i) {
+
     tmp <- unname(unlist(geostrata[i,]))
     names(tmp) <- c("xmin", "xmax", "ymin", "ymax")
 
@@ -26,8 +42,8 @@ plotGeostrata <- function(geostrata, plot = TRUE, ...) {
       sf::st_as_sfc() %>%
       sf::st_set_crs(value = 4326) %>%
       sf::st_sf() %>%
-      dplyr::mutate(geostrata.name = LETTERS[i]) %>%
-      cbind(geostrata.df[i,]) %>%
+      dplyr::mutate(geostrata.name = geostrata.names[i]) %>%
+      cbind(geostrata[i,]) %>%
       smoothr::densify()
   }) %>% dplyr::bind_rows()
 
