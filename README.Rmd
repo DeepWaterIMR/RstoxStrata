@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 # RstoxStrata
 **Define strata for survey indices. R package, updated `r packageDate("RstoxStrata")`.**
 
-
+This package helps to define strata from bathymetric grids for survey indices. The survey indices can be calculated using the [StoX software](https://stoxproject.github.io/) but also manually outside StoX. See [the user guide](https://deepwaterimr.github.io/RstoxStrata/articles/RstoxStrata.html) for further details.
 
 ## Installation
 
@@ -26,3 +26,14 @@ devtools::install_github("DeepWaterIMR/RstoxStrata")
 ```
 
 ## Usage
+
+See [the user guide](https://deepwaterimr.github.io/RstoxStrata/articles/RstoxStrata.html) and [gallery of strata systems](https://deepwaterimr.github.io/RstoxStrata/articles/Examples.html) to learn how to use the package.
+
+## Citation
+
+If you use the package for stock assessment or scientific articles, please cite it:
+
+```{r}
+citation("RstoxStrata")
+```
+

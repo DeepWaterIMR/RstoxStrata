@@ -6,6 +6,7 @@ output:
   bookdown::html_document2:
     toc: true
     toc_float: true
+    code_folding: show
 pkgdown:
   as_is: true
 vignette: >
@@ -17,8 +18,17 @@ vignette: >
 ```{r, include = FALSE}
 library(knitr)
 library(kableExtra)
-library(RstoxStrata)
+
 knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
+```
+
+Packages required to run the examples:
+
+```{r}
+library(RstoxStrata)
+library(tidyverse)
+library(sf)
+library(cowplot)
 ```
 
 # Introduction
@@ -44,6 +54,7 @@ We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Green
 
 ```{r origareas, echo=FALSE, message=FALSE, warning=FALSE}
 data(eggan_ghl_original_strata)
+
 x <- eggan_ghl_original_strata
 x$lat.interval <- paste(x$lat.min, x$lat.max, sep = "-")
 names(x)[names(x) == "interval"] <- "depth.interval"
@@ -59,6 +70,8 @@ kable(tab, caption = "Previously used strata system definition for NEA Greenland
   kable_styling(bootstrap_options = c("striped", "condensed"))
 ```
 
+## Geostrata
+
 The geographic rectangles, called "**geostrata**", are defined as a data frame for the RstoxStrata package. Optionally, the first column of the data frame can define the names of the geostrata. The four following numeric columns are required and define the minimum longitude, maximum longitude, minimum latitude and maximum latitude for the rectangles, respectively (Figure \@ref(fig:geostrata)). The coordinates are defined in decimal degrees (EPSG:4326). 
 
 ```{r geostrata, fig.cap = "A geostrata system attempting to mimic the EggaNord survey strata for Northeast Greenland halibut. The currently uses system uses latitude and gear depth for station allocation while the new StoX based approach uses position only."}
@@ -72,17 +85,23 @@ geostrata.df <- data.frame(
 plotGeostrata(geostrata.df)
 ```
 
+## Depth strata
+
 The **depth strata** are defined as a numeric vector specifying the cut points for the depth intervals.
 
 ```{r}
 depths.vec <- c(400, 500, 700, 1000, 1500)
 ```
 
+## Boundaries
+
 Since the GEBCO bathymetry model covers the entire world, it can be cut to the region of interest using the **boundary** argument. This argument accepts vectors with four numbers in the same order than geostrata (minimum and maximum longitude, minimum and maximum latitude). 
 
 ```{r}
 boundary.vec <- c(0, 17.3, 68, 80)
 ```
+
+## Strata estimation
 
 These information can then be input into the `strataPolygon()` function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. 
 
@@ -115,3 +134,41 @@ Next we compare this strata system to the depth-based system.
 
 # Results
 
+## Difference in area
+
+```{r, areadiff, class.source = 'fold-hide', fig.cap = "bla"}
+x <- dplyr::full_join(
+  eggan_ghl_original_strata %>% 
+    dplyr::select(geostrata.name, interval, orig.nm2),
+  pols$strata %>% 
+    dplyr::select(geostrata.name, interval, area.nm2) %>% 
+    sf::st_drop_geometry() %>% 
+    dplyr::mutate(area.nm2 = as.numeric(area.nm2))
+)
+
+x$pr.diff <- 100*(x$area.nm2-x$orig.nm2)/x$orig.nm2
+
+p1 <- ggplot(x, aes(x = orig.nm2, y = area.nm2)) +
+geom_abline(slope = 1, intercept = 1) +
+geom_point() +
+xlab("Original areal estimate (km2)") +
+ylab("Polygon areal estimate (km2)") +
+theme_bw()
+
+p2 <- ggplot(x, aes(x = paste(geostrata.name, interval, sep = "\n"), y = pr.diff, fill = interval)) +
+geom_col() +
+scale_fill_viridis_d("Depth strata") +
+labs(x = "", y = "Percentage difference (negative = larger original area)", fill = "Strata ID") +
+theme_bw() +
+  theme(legend.position = "none")
+
+cowplot::plot_grid(p1, p2, labels = "AUTO", ncol = 1)
+```
+
+Make map, improve the figures. Make table percentage difference instead of the figure? Write something about the area difference
+
+## Station assignment difference
+
+## Difference in survey index
+
+# Discussion

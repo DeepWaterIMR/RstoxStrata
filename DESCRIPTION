@@ -1,7 +1,7 @@
 Package: RstoxStrata
 Type: Package
 Title: Define Strata for Survey Indices
-Version: 0.2.4
+Version: 0.2.5
 Date: 2022-01-25
 Authors@R: c(person("Mikko", "Vihtakari", email = "mikko.vihtakari@hi.no",
                   role = c("aut", "cre"), 
