@@ -2,7 +2,12 @@
 title: "Estimation of strata with RstoxStrata"
 author: "Mikko Vihtakari (Institute of Marine Research)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: rmarkdown::html_vignette
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+pkgdown:
+  as_is: true
 vignette: >
   %\VignetteIndexEntry{RstoxStrata}
   %\VignetteEngine{knitr::rmarkdown}
@@ -11,31 +16,102 @@ vignette: >
 
 ```{r, include = FALSE}
 library(knitr)
+library(kableExtra)
+library(RstoxStrata)
 knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 ```
 
 # Introduction
 
-Fisheries assessment models use catch data and population trends to estimate the fishing quota (Total Allowable Catch, TAC), i.e., the safe or optimal biomass to remove from the population to ensure population continuity (sustainability). While catch data primarily govern the absolute levels in TAC estimates, population trends dictate the relative changes in TAC from year to year and help the assessment model differentiate fishing effort- and efficiency-related catch variations from actual population fluctuations. Therefore, estimating population trends is integral to fisheries assessment and can have considerable economic and ecologic consequences.  
+Fisheries assessment models use catch data and population trends to estimate the fishing quota (Total Allowable Catch, TAC), i.e., the safe or optimal biomass to remove from a population to ensure population continuity (sustainability). While catch data primarily govern the absolute levels in TAC estimates, population trends dictate the relative changes in TAC from year to year and help the assessment model differentiate fishing effort- and efficiency-related catch variations from actual population fluctuations. Therefore, estimating population trends is integral to fisheries assessment and can have considerable economic and ecologic consequences.  
 
-Estimating population trends requires deciphering how much fish there is in the sea, commonly done using survey indices tailored for a particular species, region, and sampling setup. In essence, these survey indices are estimated by summing up numbers or weights of fish within areas called strata. The strata model distribution of a stock within a particular region of interest, often delimited by political or population boundaries. Most survey indices use multiple strata, assuming that the abundance of a species, population structure, or sampling setup significantly differs within the region of interest. The formula for estimating the number (or weight) of fish within a stratum for gear that covers an area, such as trawls, multiplies an average number of fish per areal unit by area of the stratum. Since the area is a multiplier, it considerably impacts the outcome. Imprecision in the areal estimation of strata or missing samples within a stratum may significantly affect the estimated population trends and hence TAC. 
+Estimating population trends requires deciphering how much fish there is in the sea, commonly done using survey indices tailored for a particular species, region, and sampling setup. In essence, these survey indices are estimated by summing up numbers or weights of fish within areas called strata. The strata model distribution of a stock within a particular region of interest - often delimited by political or population boundaries. Most survey indices use multiple strata, assuming that the abundance of a species, population structure, or sampling setup considerably differs within the region of interest. The formula for estimating the number (or weight) of fish within a stratum for gear that covers an area, such as trawls, multiplies an average number of fish per areal unit (=density) by area of the stratum. In other words, the density of fish in each stratum is weighted by the area. Since the area is a multiplier, it considerably impacts the outcome. Imprecision in the areal estimation of strata or missing samples within a stratum may greatly affect the estimated population trends and hence TAC. 
 
-Depth is among the best factors to describe the distribution of fish species [REFS]. Consequently, bottom depth intervals are commonly incorporated into strata to model the vertical distribution of a species. Using bottom depth can lead to higher imprecision in areal estimation for species that inhabit narrow depth ranges along the continental slopes, such as the Greenland halibut. Imprecision in the areal estimation stemming from poorly charted bathymetry or too low resolution can be an order of magnitude and directly proportional to survey index estimates. 
+Depth is among the best factors to describe the distribution of fish species [REFS]. Consequently, bottom depth intervals are commonly incorporated into strata to model the vertical distribution of a species. Using bottom depth can lead to imprecision in areal estimation for species that inhabit narrow depth ranges along the continental slopes, such as the Greenland halibut. Imprecision in the areal estimation stemming from poorly charted bathymetry and low or inconsistent model resolution can be an order of magnitude and directly proportional to survey index estimates. 
 
 Here we discuss pitfalls in making strata for survey indices and study the consequences of filtering disconnected regions from strata using synthetic populations and Northeast Arctic Greenland halibut as example data. We suggest a transparent framework to estimate strata from bathymetric grid data programmed to an R package called RstoxStrata, which is integrated into the StoX software for survey index calculation. While the framework is applied to bottom depth, it can be used for any gridded spatial data such as surface temperature, salinity, or modeled prey density. 
 
 # Material and methods
 
-The proposed way of defining strata described here attempts to simplify the strata making where possible. Further, the process is intended to be transparent and reproducible. The distribution of a species is modeled using two components: using two components: 1) geographic regions (rectangles) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution.  The depth data are acquired from an online database, [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2020 grid, in this document.
+The proposed way of defining strata here attempts to simplify the strata making. Further, the process is transparent and reproducible. The distribution of a species is modeled using two components: 1) geographic regions (rectangles, called geostrata) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution. The depth data are acquired from the highest openly available evenly gridded **depth model** at the time of writing, the [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2021 grid (approximately 1/4 nautical miles in the latitude direction). The *GEBCO_2021 Grid (ice surface elevation)* netCDF file is downloaded (4 Gb) and placed in a central location on the computer:
+
+```{r}
+link <- "~/Desktop/gebco_2021/GEBCO_2021.nc"
+```
 
 
-Geostrata
+We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Greenland halibut as an example. The survey and its strata system are used to estimate the primary stock index for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf). The original system assigns stations to strata based on latitude and gear depth, while the StoX software uses position only in the assignment (Table \@ref(tab:origareas)). The calculus for the strata area used in the original system has been lost and is not reproducible. Since the new StoX based approach uses solely position in station allocation to strata, we need to define the longitude limits as well to mimic the old strata system.
 
-Depths vector and bathymetry
+```{r origareas, echo=FALSE, message=FALSE, warning=FALSE}
+data(eggan_ghl_original_strata)
+x <- eggan_ghl_original_strata
+x$lat.interval <- paste(x$lat.min, x$lat.max, sep = "-")
+names(x)[names(x) == "interval"] <- "depth.interval"
+x <- na.omit(x)
 
-Boundary vector
+x$lat.interval <- factor(x$lat.interval, levels = unique(x$lat.interval))
+x$depth.interval <- factor(x$depth.interval, levels = unique(x$depth.interval))
 
-strataPolygon object, a list with **strata** and **geostrata** sf polygon objects. 
+tab <- reshape2::dcast(x, lat.interval ~ depth.interval, value.var = "orig.nm2")
+names(tab)[names(tab) == "lat.interval"] <- ""
 
-- Continuous strata
-- Removal of crumbs and holes
+kable(tab, caption = "Previously used strata system definition for NEA Greenland halibut. Latitude intervals given are along rows, depth intervals along columns and the numbers represent strata areas in square nautical miles.") %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"))
+```
+
+The geographic rectangles, called "**geostrata**", are defined as a data frame for the RstoxStrata package. Optionally, the first column of the data frame can define the names of the geostrata. The four following numeric columns are required and define the minimum longitude, maximum longitude, minimum latitude and maximum latitude for the rectangles, respectively (Figure \@ref(fig:geostrata)). The coordinates are defined in decimal degrees (EPSG:4326). 
+
+```{r geostrata, fig.cap = "A geostrata system attempting to mimic the EggaNord survey strata for Northeast Greenland halibut. The currently uses system uses latitude and gear depth for station allocation while the new StoX based approach uses position only."}
+geostrata.df <- data.frame(
+  lon.min = c(3, 10, 10, 8),
+  lon.max = c(16, 17.3, 17.3, 17.3),
+  lat.min = c(76, 73.5, 70.5, 68),
+  lat.max = c(80, 76, 73.5, 70.5)
+)
+
+plotGeostrata(geostrata.df)
+```
+
+The **depth strata** are defined as a numeric vector specifying the cut points for the depth intervals.
+
+```{r}
+depths.vec <- c(400, 500, 700, 1000, 1500)
+```
+
+Since the GEBCO bathymetry model covers the entire world, it can be cut to the region of interest using the **boundary** argument. This argument accepts vectors with four numbers in the same order than geostrata (minimum and maximum longitude, minimum and maximum latitude). 
+
+```{r}
+boundary.vec <- c(0, 17.3, 68, 80)
+```
+
+These information can then be input into the `strataPolygon()` function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. 
+
+```{r, stratawithfrags, fig.cap = "Initial strata system for the EggaNord survey index containing fragments that increase the strata area", results='hide'}
+pols <- strataPolygon(
+  bathy = link, 
+  depths = depths.vec, 
+  boundary = boundary.vec,
+  geostrata = geostrata.df
+)
+
+plot(pols)
+```
+
+The initial strata system contains **fragments** from sea mounts and fjords. These fragments bias the area of strata and can be removed using the `fragment.area` argument which accepts a single threshold in square kilometers. Fragments smaller than the threshold will be removed. The process of finding the correct threshold is iterative.
+
+```{r, strata, fig.cap = "Final strata system for the EggaNord survey to estimate a survey index for Northeast Arctic Greenland halibut. The strata system attemps to mimic the system used in the assessment that bases on latitude and gear depth.", results='hide', fig.height=14}
+pols <- strataPolygon(
+  bathy = link, 
+  depths = depths.vec, 
+  boundary = boundary.vec,
+  geostrata = geostrata.df,
+  fragment.area = 400
+)
+
+plot(pols, facetted = TRUE)
+```
+
+Next we compare this strata system to the depth-based system.
+
+# Results
+

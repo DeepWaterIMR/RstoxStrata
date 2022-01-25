@@ -1,7 +1,7 @@
 
 # RstoxStrata
 
-**Define strata for survey indices. R package, updated 2022-01-20.**
+**Define strata for survey indices. R package, updated 2022-01-25.**
 
 ## Installation
 
@@ -14,3 +14,5 @@ package:
 ``` r
 devtools::install_github("DeepWaterIMR/RstoxStrata")
 ```
+
+## Usage

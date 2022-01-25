@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 **Define strata for survey indices. R package, updated `r packageDate("RstoxStrata")`.**
 
 
+
 ## Installation
 
 The package can be installed from GitHub using the [**devtools**](https://cran.r-project.org/web/packages/devtools/index.html) (or [remotes](https://cran.r-project.org/web/packages/remotes/index.html)) package:
@@ -24,4 +25,4 @@ The package can be installed from GitHub using the [**devtools**](https://cran.r
 devtools::install_github("DeepWaterIMR/RstoxStrata")
 ```
 
-
+## Usage

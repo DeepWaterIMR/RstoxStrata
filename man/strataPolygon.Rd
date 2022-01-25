@@ -21,7 +21,7 @@ strataPolygon(
 
 \item{boundary}{A \link[sf]{st_polygon} object, text string defining the file path to a spatial polygon or a numeric vector of length 4 giving the boundaries for the overall region. Should be given as decimal degrees. If numeric vector, the first element defines the minimum longitude, the second element the maximum longitude, the third element the minimum latitude and the fourth element the maximum latitude of the bounding box.}
 
-\item{geostrata}{A data frame defining the minimum and maximum longitude and latitude for geographically bounded strata. The data frame columns must be ordered as \code{lon.min, lon.max, lat.min, lat.max}. Column names do not matter. Each row in the data frame will be interpreted as separate geographically bounded strata. Use \code{NULL} to ignore geostrata.}
+\item{geostrata}{A data frame defining the minimum and maximum longitude and latitude for geographically bounded strata. The data frame has to have four numeric columns and optionally one character or factor column. The character or factor column defines the names for geostrata, the default being \code{LETTERS[1:nrow(geostrata)]}. The numeric columns must be ordered as \code{lon.min, lon.max, lat.min, lat.max}. Column names do not matter. Each row in the data frame will be interpreted as separate geographically bounded strata. Use \code{NULL} to ignore geostrata.}
 
 \item{fragment.area}{Single numeric value specifying a threshold (area in km2) for disconnected polygons and holes which should be removed from the strata. Set to \code{NULL} to bypass the removal.}
 
