@@ -11,8 +11,10 @@ pkgdown:
   as_is: true
 vignette: >
   %\VignetteIndexEntry{RstoxStrata}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -25,9 +27,11 @@ knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment
 Packages required to run the examples:
 
 ```{r}
-library(RstoxStrata)
-library(tidyverse)
 library(sf)
+library(dplyr)
+library(tidyr)
+library(RstoxStrata)
+library(ggOceanMaps)
 library(cowplot)
 ```
 
@@ -50,7 +54,7 @@ link <- "~/Desktop/gebco_2021/GEBCO_2021.nc"
 ```
 
 
-We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Greenland halibut as an example. The survey and its strata system are used to estimate the primary stock index for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf). The original system assigns stations to strata based on latitude and gear depth, while the StoX software uses position only in the assignment (Table \@ref(tab:origareas)). The calculus for the strata area used in the original system has been lost and is not reproducible. Since the new StoX based approach uses solely position in station allocation to strata, we need to define the longitude limits as well to mimic the old strata system.
+We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Greenland halibut as an example. The survey and its strata system are used to estimate the primary stock index for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf). The original system assigns stations to strata based on latitude and gear depth [@Høines2008], while the StoX software uses position only in the assignment [@Johnsen2019] (Table \@ref(tab:origareas)). The calculus for the strata area used in the original system has been lost and is not reproducible. Since the new StoX based approach uses solely position in station allocation to strata, we need to define the longitude limits as well to mimic the old strata system.
 
 ```{r origareas, echo=FALSE, message=FALSE, warning=FALSE}
 data(eggan_ghl_original_strata)
@@ -63,7 +67,7 @@ x <- na.omit(x)
 x$lat.interval <- factor(x$lat.interval, levels = unique(x$lat.interval))
 x$depth.interval <- factor(x$depth.interval, levels = unique(x$depth.interval))
 
-tab <- reshape2::dcast(x, lat.interval ~ depth.interval, value.var = "orig.nm2")
+tab <- pivot_wider(x, id_cols = "depth.interval", names_from = "lat.interval", values_from = "orig.nm2")
 names(tab)[names(tab) == "lat.interval"] <- ""
 
 kable(tab, caption = "Previously used strata system definition for NEA Greenland halibut. Latitude intervals given are along rows, depth intervals along columns and the numbers represent strata areas in square nautical miles.") %>%
@@ -77,7 +81,7 @@ The geographic rectangles, called "**geostrata**", are defined as a data frame f
 ```{r geostrata, fig.cap = "A geostrata system attempting to mimic the EggaNord survey strata for Northeast Greenland halibut. The currently uses system uses latitude and gear depth for station allocation while the new StoX based approach uses position only."}
 geostrata.df <- data.frame(
   lon.min = c(3, 10, 10, 8),
-  lon.max = c(16, 17.3, 17.3, 17.3),
+  lon.max = c(16, 17.5, 17.5, 17.5),
   lat.min = c(76, 73.5, 70.5, 68),
   lat.max = c(80, 76, 73.5, 70.5)
 )
@@ -93,17 +97,15 @@ The **depth strata** are defined as a numeric vector specifying the cut points f
 depths.vec <- c(400, 500, 700, 1000, 1500)
 ```
 
-## Boundaries
+## Strata estimation
 
 Since the GEBCO bathymetry model covers the entire world, it can be cut to the region of interest using the **boundary** argument. This argument accepts vectors with four numbers in the same order than geostrata (minimum and maximum longitude, minimum and maximum latitude). 
 
 ```{r}
-boundary.vec <- c(0, 17.3, 68, 80)
+boundary.vec <- c(0, 17.5, 68, 80)
 ```
 
-## Strata estimation
-
-These information can then be input into the `strataPolygon()` function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. 
+These information can then be input into the [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. 
 
 ```{r, stratawithfrags, fig.cap = "Initial strata system for the EggaNord survey index containing fragments that increase the strata area", results='hide'}
 pols <- strataPolygon(
@@ -116,13 +118,22 @@ pols <- strataPolygon(
 plot(pols)
 ```
 
+The depth strata 400-500 m between geostrata B and C is large and exceeds regularly visited stations. The [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function accepts polygons as the `boundary` argument allowing manual tuning of the strata (Figures \@ref(fig:boundary) and \@ref(fig:strata)).
+
+```{r, boundary, fig.cap = "Spatial polygons can be used as the boundary argument within strataPolygons() to manually restrict the strata extend."}
+boundary <- sf::read_sf("../inst/shapes/boundary_shape.shp")
+# system.file("extdata", "boundary_shape.shp", package = "RstoxStrata")
+ggOceanMaps::qmap(boundary)
+```
+
 The initial strata system contains **fragments** from sea mounts and fjords. These fragments bias the area of strata and can be removed using the `fragment.area` argument which accepts a single threshold in square kilometers. Fragments smaller than the threshold will be removed. The process of finding the correct threshold is iterative.
 
 ```{r, strata, fig.cap = "Final strata system for the EggaNord survey to estimate a survey index for Northeast Arctic Greenland halibut. The strata system attemps to mimic the system used in the assessment that bases on latitude and gear depth.", results='hide', fig.height=14}
+
 pols <- strataPolygon(
   bathy = link, 
   depths = depths.vec, 
-  boundary = boundary.vec,
+  boundary = boundary,
   geostrata = geostrata.df,
   fragment.area = 400
 )
@@ -130,42 +141,63 @@ pols <- strataPolygon(
 plot(pols, facetted = TRUE)
 ```
 
-Next we compare this strata system to the depth-based system.
+## Survey index
+
+
 
 # Results
 
 ## Difference in area
 
-```{r, areadiff, class.source = 'fold-hide', fig.cap = "bla"}
+The reconstructed strata areas were generally lower than the original except for the deepest 1000-1500 strata, the manually adjusted strata C 400-500, and geostrata A excluding the shallowest 400-500 strata  (Figure \@ref(fig:areadiff), Table \@ref(tab:areadifftab)). There are no obvious reasons for the difference but since the method for acquiring the original strata areas is lost and over a decade old, the reconstructed areas are likely more trustworthy than the old ones. 
+
+```{r, areadiff, class.source = 'fold-hide', fig.cap = "Difference between the original and reconstructed strata area. A) The differences are shown as a scatter plot. Color refers to depth strata and letter to geostrata name. B) The differences are shown on a map. Color refers to percentage difference. Negative percentages mean larger original area than reconstructed area.", fig.height = 7.5}
+
 x <- dplyr::full_join(
   eggan_ghl_original_strata %>% 
     dplyr::select(geostrata.name, interval, orig.nm2),
   pols$strata %>% 
     dplyr::select(geostrata.name, interval, area.nm2) %>% 
-    sf::st_drop_geometry() %>% 
     dplyr::mutate(area.nm2 = as.numeric(area.nm2))
-)
+) %>% 
+  mutate(pr.diff = 100*(area.nm2-orig.nm2)/orig.nm2, .before = "geometry") %>% 
+  st_as_sf() %>% 
+  mutate(interval = factor(interval, levels = unique(.$interval)))
 
-x$pr.diff <- 100*(x$area.nm2-x$orig.nm2)/x$orig.nm2
+p1 <- ggplot(x, aes(x = orig.nm2, y = area.nm2, color = interval, label = geostrata.name)) +
+  geom_abline(slope = 1, intercept = 1) +
+  geom_text() +
+  labs(x = "Original area (km2)",
+       y = "Polygon area (km2)",
+       color = "Depth strata") +
+  guides(color=guide_legend(nrow=2,byrow=TRUE)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
 
-p1 <- ggplot(x, aes(x = orig.nm2, y = area.nm2)) +
-geom_abline(slope = 1, intercept = 1) +
-geom_point() +
-xlab("Original areal estimate (km2)") +
-ylab("Polygon areal estimate (km2)") +
-theme_bw()
+p2 <- basemap(x) + 
+  geom_sf(data = x, aes(fill = pr.diff)) + 
+  scale_fill_gradient2("Percentage\ndifference") +
+  geom_sf(data = pols$geostrata,
+          fill = NA, color = "black") +
+  geom_sf_text(data = sf::st_centroid(pols$geostrata) %>% suppressWarnings(),
+               aes(label = geostrata.name),
+               fontface = 2)  +
+  theme(legend.position = "bottom")
 
-p2 <- ggplot(x, aes(x = paste(geostrata.name, interval, sep = "\n"), y = pr.diff, fill = interval)) +
-geom_col() +
-scale_fill_viridis_d("Depth strata") +
-labs(x = "", y = "Percentage difference (negative = larger original area)", fill = "Strata ID") +
-theme_bw() +
-  theme(legend.position = "none")
-
-cowplot::plot_grid(p1, p2, labels = "AUTO", ncol = 1)
+cowplot::plot_grid(p1, p2, labels = "AUTO")
 ```
 
-Make map, improve the figures. Make table percentage difference instead of the figure? Write something about the area difference
+```{r areadifftab, echo=FALSE, message=FALSE, warning=FALSE}
+tab <- x %>% 
+  mutate(pr.diff = round(pr.diff, 1)) %>% 
+  st_drop_geometry() %>% 
+  pivot_wider(., id_cols = "interval", names_from = "geostrata.name", values_from = "pr.diff")
+
+names(tab)[names(tab) == "interval"] <- ""
+
+kable(tab, caption = "Percentage difference between original and reconstructed strata areas. Negative percentages mean larger original area than reconstructed area.") %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"))
+```
 
 ## Station assignment difference
 

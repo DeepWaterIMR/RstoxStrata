@@ -1,8 +1,8 @@
 Package: RstoxStrata
 Type: Package
 Title: Define Strata for Survey Indices
-Version: 0.2.5
-Date: 2022-01-25
+Version: 0.2.6
+Date: 2022-01-26
 Authors@R: c(person("Mikko", "Vihtakari", email = "mikko.vihtakari@hi.no",
                   role = c("aut", "cre"), 
                   comment = c(affiliation = "Institute of Marine Research", 
@@ -14,7 +14,7 @@ Description: Define strata from bathymetric grids to calculate survey indices
 Imports: 
     magrittr, dplyr, tibble, sf, raster, stars, smoothr, units, rmapshaper, 
     ggplot2, ggOceanMaps
-Suggests: knitr
+Suggests: knitr, cowplot, kableExtra, tidyr
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true

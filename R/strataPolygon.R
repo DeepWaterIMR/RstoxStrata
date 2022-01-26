@@ -42,7 +42,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   ### The boundary argument
 
-  if(grepl("spatialpolygons|sf", class(boundary), ignore.case = TRUE)) {
+  if(any(grepl("spatialpolygons|sf", class(boundary), ignore.case = TRUE))) {
 
     if(is.na(sf::st_crs(boundary))) {
       stop("boundary misses proj4string argument.")
@@ -50,7 +50,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
       stop("boundary has to be defined as decimal degrees")
     }
 
-  } else if(class(boundary) == "character" & length(boundary) == 1) {
+  } else if("character" %in% class(boundary) & length(boundary) == 1) {
     if(!file.exists(boundary)) stop("Boundary shapefile not found. Check your path")
 
     boundary <- sf::st_read(boundary, quiet = TRUE)
@@ -65,7 +65,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
     stop("The boundary parameter has to be a numeric/integer vector of length 4 giving the decimal degree longitude and latitude limits for the strata region OR a character argument giving the location of the shapefile polygon.")
   }
 
-  if(is.vector(boundary) & class(boundary) %in% c("numeric", "integer") & length(boundary) == 4 & is.null(names(boundary))) {
+  if(is.vector(boundary) & any(class(boundary) %in% c("numeric", "integer")) &
+     length(boundary) == 4 & is.null(names(boundary))) {
     if(boundary[1] > boundary[2]) boundary <- boundary[c(2,1,3,4)] # correct wrong lon order
     if(boundary[3] > boundary[4]) boundary <- boundary[c(1,2,4,3)] # correct wrong lat order
     names(boundary) <- c("xmin", "xmax", "ymin", "ymax")
@@ -133,9 +134,10 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
 
   utils::setTxtProgressBar(pb, 3)
 
-  if(grepl("spatialpolygons|sf", class(boundary), ignore.case = TRUE)) {
+  if(any(grepl("spatialpolygons|sf", class(boundary), ignore.case = TRUE))) {
     if(raster) {
       ras <- raster::crop(ras, boundary)
+      ras <- raster::mask(ras, boundary)
     } else {
       ras <- sf::st_crop(ras, boundary)
     }
