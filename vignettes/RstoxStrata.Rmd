@@ -7,6 +7,7 @@ output:
     toc: true
     toc_float: true
     code_folding: show
+    number_sections: false
 pkgdown:
   as_is: true
 vignette: >
@@ -30,10 +31,24 @@ Packages required to run the examples:
 library(sf)
 library(dplyr)
 library(tidyr)
+library(tibble)
 library(RstoxStrata)
 library(ggOceanMaps)
 library(cowplot)
 ```
+
+```{r, include = FALSE}
+# Official EggaN index for comparison. Acquired from strata-and-survey-indices.Rmd
+
+official <- structure(list(year = c(1996L, 1997L, 1998L, 1999L, 2000L, 2001L, 
+                                    2002L, 2003L, 2004L, 2005L, 2006L, 2007L, 2008L, 2009L, 2011L, 
+                                    2013L, 2015L, 2017L, 2019L), value = c(81.799, 82.345, 82.717, 
+                                                                           104.194, 80.587, 94.785, 97.607, 109.489, 103.62, 86.944, 81.839, 
+                                                                           88.257, 84.909, 108.876, 84.968, 63.185, 78.013, 59.382, 46.967
+                                    )), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, 
+                                                                                                -19L))
+```
+
 
 # Introduction
 
@@ -122,7 +137,7 @@ The depth strata 400-500 m between geostrata B and C is large and exceeds regula
 
 ```{r, boundary, fig.cap = "Spatial polygons can be used as the boundary argument within strataPolygons() to manually restrict the strata extend."}
 boundary <- sf::read_sf("../inst/shapes/boundary_shape.shp")
-# system.file("extdata", "boundary_shape.shp", package = "RstoxStrata")
+# sf::read_sf(system.file("shapes", "boundary_shape.shp", package = "RstoxStrata"))
 ggOceanMaps::qmap(boundary)
 ```
 
@@ -143,7 +158,60 @@ plot(pols, facetted = TRUE)
 
 ## Survey index
 
+```{r, class.source = 'fold-hide'}
+data(eggan_ghl)
 
+stn <- eggan_ghl %>%
+  mutate(depth.interval =
+           cut(.$bottomdepthstart, depths.vec,
+               labels = paste(depths.vec[1:(length(depths.vec)-1)],
+                              depths.vec[2:(length(depths.vec))], sep = "-"))
+  ) %>%
+  st_as_sf(coords = c("longitudestart", "latitudestart"), crs = 4326, remove = FALSE) %>%
+  rownames_to_column("id") %>%
+  st_join(pols$strata[, c("interval", "geostrata.name", "area.nm2")]) %>%
+  filter(!duplicated(id)) %>%
+  st_join(pols$geostrata[, c("geostrata.name")] %>%
+            rename("geostrata.polygon" = "geostrata.name")) %>%
+  filter(!duplicated(id)) %>%
+  st_set_geometry(NULL) %>%
+  mutate(area.nm2 = as.numeric(area.nm2)) %>%
+  left_join(.,
+            eggan_ghl_original_strata %>%
+              dplyr::select(geostrata.name, interval, orig.nm2) %>%
+              rename("geostrata.polygon" = "geostrata.name", "depth.interval" = "interval")
+  ) %>%
+  rename("area.new" = "area.nm2", "area.old" = "orig.nm2") %>%
+  relocate(distance, biomass, density, .after = last_col()) %>%
+  suppressMessages()
+
+old_area_old_assig <- stn %>%
+  filter(!is.na(area.old)) %>%
+  dplyr::select(startyear, geostrata.polygon, depth.interval, area.old, density) %>%
+  rename("geostrata.name" = "geostrata.polygon",
+         "interval" = "depth.interval",
+         "area" = "area.old") %>%
+  group_by(startyear, geostrata.name, interval, area) %>%
+  summarise(mean = mean(density), sd = sd(density), n = n()) %>%
+  mutate(index = area*mean/1e6,
+         index.sd = area*sd/1e6,
+         ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
+         ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
+  suppressWarnings() %>%
+  ungroup() %>%
+  group_by(startyear) %>%
+  summarise(reconst = sum(index))
+
+surv_diff <- left_join(official, old_area_old_assig %>% rename("year" = "startyear")) %>%
+  mutate(diff = value - reconst)
+
+removed_stn <- stn %>% filter(is.na(area.new) | is.na(area.old)) %>%
+  mutate(reason = ifelse(is.na(depth.interval) & is.na(geostrata.polygon), "Both",
+                         ifelse(is.na(depth.interval), "Depth",
+                                ifelse(is.na(geostrata.polygon), "Outside",
+                                       ifelse(is.na(interval), "Position" ,"Other")))))
+
+```
 
 # Results
 
@@ -201,6 +269,30 @@ kable(tab, caption = "Percentage difference between original and reconstructed s
 
 ## Station assignment difference
 
+The use of position based station assignment to strata led to removal of `r removed_stn %>% filter(reason == "Position") %>% nrow()` stations that were included in the old depth-latitude based assignment (Figure \@ref(fig:removalmap)). 
+
+```{r, removalmap, class.source = 'fold-hide', fig.cap = "Position of EggaN survey stations removed from survey index calculations. The color indicates the reason for removal: depth = the recorded bottom depth is outside the depth strata, outside = position of the station is outside the geostrata, position = position of the station is outside the strata due to impression in bathymetry model and strata estimation or due to wrongly recorded coordinates. Grey dots indicate stations included in survey index calculations. The figure contains data from all years (1994-2021)."}
+p <- basemap(data = removed_stn) +
+  geom_sf(data = pols$strata %>% sf::st_union(), fill = NA, color = "black") +
+  geom_spatial_point(data = stn, aes(x = longitudestart, y = latitudestart), size = 0.5, color = "grey") +
+  geom_spatial_point(data = removed_stn, aes(x = longitudestart, y = latitudestart, color = reason)) +
+  labs(color = "Reason")
+
+reorder_layers(p)
+```
+
+Percent agreement between old and new methods figure (geostrata, depth)
+
+Depth interval difference figure (how they get assigned)
+
 ## Difference in survey index
+
+The reconstructed survey index using depth- and latitude-based station assignment to strata and the original strata areas had a correlation of `r round(cor(surv_diff$value, surv_diff$reconst), 3)` with the official EggaN survey index used in the assessment model. The average annual difference between these indices was `r round(mean(surv_diff$diff)*1000, 0)` tons and standard deviation `r round(sd(surv_diff$diff)*1000, 0)` tons. While these differences may sound large, for comparison purposes the official and reconstructed survey indices were practically identical. The difference is likely caused by a few stations being included/removed from survey index calculations differently and highlights the differences weighing by the area can cause to survey indices. Consequently, only the reconstructed survey indices are used in the comparison for consistency. 
+
+Difference between old and new area, depth based and position based assignment figure
+
+Impact of geo- and depth strata on the index figure
+
+Correlation between geo- and depth strata figure
 
 # Discussion

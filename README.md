@@ -1,7 +1,7 @@
 
 # RstoxStrata
 
-**Define strata for survey indices. R package, updated 2022-01-25.**
+**Define strata for survey indices. R package, updated 2022-01-26.**
 
 This package helps to define strata from bathymetric grids for survey
 indices. The survey indices can be calculated using the [StoX
@@ -32,7 +32,7 @@ to learn how to use the package.
 
 ## Citation
 
-If you use the package for stock assessment or scientific articles,
+When using use the package for stock assessment or scientific articles,
 please cite it:
 
 ``` r
@@ -41,7 +41,7 @@ citation("RstoxStrata")
 #> To cite package 'RstoxStrata' in publications use:
 #> 
 #>   Mikko Vihtakari (2022). RstoxStrata: Define Strata for Survey
-#>   Indices. R package version 0.2.4.
+#>   Indices. R package version 0.2.7.
 #>   https://DeepWaterIMR.github.io/RstoxStrata/
 #> 
 #> A BibTeX entry for LaTeX users is
@@ -50,7 +50,7 @@ citation("RstoxStrata")
 #>     title = {RstoxStrata: Define Strata for Survey Indices},
 #>     author = {Mikko Vihtakari},
 #>     year = {2022},
-#>     note = {R package version 0.2.4},
+#>     note = {R package version 0.2.7},
 #>     url = {https://DeepWaterIMR.github.io/RstoxStrata/},
 #>   }
 ```

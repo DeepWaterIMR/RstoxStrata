@@ -137,7 +137,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   if(any(grepl("spatialpolygons|sf", class(boundary), ignore.case = TRUE))) {
     if(raster) {
       ras <- raster::crop(ras, boundary)
-      ras <- raster::mask(ras, boundary)
+      ras <- raster::mask(x = ras, mask = boundary)
     } else {
       ras <- sf::st_crop(ras, boundary)
     }
@@ -218,8 +218,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
     pol$area <- sf::st_area(pol)
 
     if(!is.null(fragment.area)) {
-    pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
-    pol <- smoothr::fill_holes(pol, units::set_units(fragment.area, "km^2", mode = "standard"))
+      pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
+      pol <- smoothr::fill_holes(pol, units::set_units(fragment.area, "km^2", mode = "standard"))
     }
 
     pol
@@ -245,8 +245,8 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   pol$area <- sf::st_area(pol)
 
   if(!is.null(fragment.area)) {
-  pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
-  # pol <- smoothr::fill_holes(pol, units::set_units(1, "km^2", mode = "standard"))
+    pol <- pol[sf::st_area(pol) >= units::set_units(fragment.area, "km^2", mode = "standard"),]
+    # pol <- smoothr::fill_holes(pol, units::set_units(1, "km^2", mode = "standard"))
   }
 
   poll <- pol
@@ -351,6 +351,14 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   if(!all(sf::st_is_valid(pol))) {
     pol <- sf::st_make_valid(pol)
   }
+
+  ## Column classes
+
+  pol <- pol %>%
+    mutate(interval =
+             factor(as.character(interval),
+                    levels = unique(as.character(pol$interval)))
+           )
 
   ## Calculate area ####
 

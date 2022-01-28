@@ -31,7 +31,7 @@ See [the user guide](https://deepwaterimr.github.io/RstoxStrata/articles/RstoxSt
 
 ## Citation
 
-If you use the package for stock assessment or scientific articles, please cite it:
+When using use the package for stock assessment or scientific articles, please cite it:
 
 ```{r}
 citation("RstoxStrata")
