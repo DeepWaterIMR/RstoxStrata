@@ -40,13 +40,15 @@ library(cowplot)
 ```{r, include = FALSE}
 # Official EggaN index for comparison. Acquired from strata-and-survey-indices.Rmd
 
-official <- structure(list(year = c(1996L, 1997L, 1998L, 1999L, 2000L, 2001L, 
-                                    2002L, 2003L, 2004L, 2005L, 2006L, 2007L, 2008L, 2009L, 2011L, 
-                                    2013L, 2015L, 2017L, 2019L), value = c(81.799, 82.345, 82.717, 
-                                                                           104.194, 80.587, 94.785, 97.607, 109.489, 103.62, 86.944, 81.839, 
-                                                                           88.257, 84.909, 108.876, 84.968, 63.185, 78.013, 59.382, 46.967
-                                    )), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, 
-                                                                                                -19L))
+official <- structure(
+  list(
+    year = 
+      c(1996L, 1997L, 1998L, 1999L, 2000L, 2001L, 2002L, 2003L, 2004L, 2005L,
+        2006L, 2007L, 2008L, 2009L, 2011L, 2013L, 2015L, 2017L, 2019L), 
+    value = c(81.799, 82.345, 82.717, 104.194, 80.587, 94.785, 97.607, 109.489,
+              103.62, 86.944, 81.839, 88.257, 84.909, 108.876, 84.968, 63.185, 
+              78.013, 59.382, 46.967)), 
+  class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -19L))
 ```
 
 
@@ -202,15 +204,46 @@ old_area_old_assig <- stn %>%
   group_by(startyear) %>%
   summarise(reconst = sum(index))
 
-surv_diff <- left_join(official, old_area_old_assig %>% rename("year" = "startyear")) %>%
+surv_diff <- 
+  left_join(official, old_area_old_assig %>% rename("year" = "startyear")) %>%
   mutate(diff = value - reconst)
 
 removed_stn <- stn %>% filter(is.na(area.new) | is.na(area.old)) %>%
-  mutate(reason = ifelse(is.na(depth.interval) & is.na(geostrata.polygon), "Both",
-                         ifelse(is.na(depth.interval), "Depth",
-                                ifelse(is.na(geostrata.polygon), "Outside",
-                                       ifelse(is.na(interval), "Position" ,"Other")))))
+  mutate(
+    reason = 
+      ifelse(is.na(depth.interval) & is.na(geostrata.polygon), "Both",
+             ifelse(is.na(depth.interval), "Depth",
+                    ifelse(is.na(geostrata.polygon), "Outside",
+                           ifelse(is.na(interval), "Position" ,"Other")))))
+pb_index <- stn %>%
+  filter(!is.na(area.new)) %>%
+  rename("geostrata" = "geostrata.name",
+         "area" = "area.new") %>% 
+  group_by(startyear, geostrata, interval, area) %>%
+  summarise(mean = mean(density), sd = sd(density), n = n()) %>%
+  mutate(index = area*mean/1e6,
+         index.sd = area*sd/1e6,
+         ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
+         ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
+  mutate(type = "Position", .after = "interval") %>% 
+  suppressWarnings() %>%
+  ungroup()
 
+db_index <- stn %>%
+  filter(!is.na(area.new)) %>%
+  dplyr::select(-interval) %>% 
+  rename("geostrata" = "geostrata.polygon",
+         "interval" = "depth.interval",
+         "area" = "area.new") %>% 
+  group_by(startyear, geostrata, interval, area) %>%
+  summarise(mean = mean(density), sd = sd(density), n = n()) %>%
+  mutate(index = area*mean/1e6,
+         index.sd = area*sd/1e6,
+         ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
+         ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
+  mutate(type = "Depth-latitude", .after = "interval") %>% 
+  suppressWarnings() %>%
+  ungroup()
 ```
 
 # Results
@@ -263,15 +296,106 @@ tab <- x %>%
 
 names(tab)[names(tab) == "interval"] <- ""
 
-kable(tab, caption = "Percentage difference between original and reconstructed strata areas. Negative percentages mean larger original area than reconstructed area.") %>%
+kable(tab, caption = "Percentage difference between original and reconstructed strata areas. Negative percentages mean larger original area than reconstructed area. Geostrata are shown vertically and depth intervals horizontally.") %>%
   kable_styling(bootstrap_options = c("striped", "condensed"))
 ```
 
 ## Station assignment difference
 
-The use of position based station assignment to strata led to removal of `r removed_stn %>% filter(reason == "Position") %>% nrow()` stations that were included in the old depth-latitude based assignment (Figure \@ref(fig:removalmap)). 
+```{r, include = FALSE}
+tmp1 <- stn %>%
+  dplyr::select(id, startyear, geostrata.polygon, depth.interval, area.old) %>%
+  rename("geostrata" = "geostrata.polygon",
+         "interval" = "depth.interval",
+         "area" = "area.old") %>%
+  mutate(db.geostrata = ifelse(is.na(geostrata), "Outside", geostrata),
+         db.interval = ifelse(is.na(interval), "Outside", interval)) %>%
+  dplyr::select(id, startyear, db.geostrata, db.interval)
+
+tmp2 <- stn %>%
+  dplyr::select(id, startyear, longitudestart, latitudestart, geostrata.name, geostrata.polygon, interval, area.new) %>%
+  mutate(interval = as.character(interval)) %>%
+  rename("geostrata" = "geostrata.name",
+         "area" = "area.new") %>%
+  mutate(pb.geostrata = ifelse(is.na(geostrata.polygon), "Outside", geostrata.polygon),
+         pb.interval = ifelse(is.na(interval), "Outside", interval)) %>%
+  dplyr::select(id, startyear, pb.geostrata, pb.interval)
+
+tmp3 <- full_join(tmp1, tmp2) %>%
+  mutate(db.strata = paste(db.geostrata, db.interval),
+         pb.strata = paste(pb.geostrata, pb.interval)) %>%
+  group_by(db.strata, pb.strata) %>%
+  count() %>%
+  group_by(db.strata) %>%
+  mutate(total = sum(n),
+         pr = 100*n/total) %>%
+  mutate(geostrata = sapply(strsplit(db.strata, " "), "[[", 1),
+         interval = sapply(strsplit(db.strata, " "), "[[", 2)) %>%
+  mutate(interval =
+           factor(interval,
+                  levels = c(levels(pols$strata$interval), "Outside")))
+
+tmp4 <- stn %>% 
+  filter(!is.na(geostrata.polygon)) %>% 
+  dplyr::select(bottomdepthstart, depth.interval, interval) %>% 
+  mutate_at(c("depth.interval", "interval"), function(x) {
+    factor(replace(as.character(x), is.na(x), "Outside"),
+           levels = c(levels(pols$strata$interval), "Outside"))}
+  ) %>%
+  filter(depth.interval != interval) 
+```
+
+Total of `r tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum()` stations (`r round(100*(tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum())/sum(tmp3$n), 1)`%) were assigned differently between depth-latitude- and position-based assignment. Stations were consequently assigned to the same geostrata, but assignment to depth strata differed. Most of these stations had a bottom depth close to the depth strata boundaries (Figure \@ref(fig:differenceplot)), although some had bottom depths that were far off from the depths estimated based on position. 
+
+The agreement between depth-latitude and position-based station assignment to strata varied between `r tmp3 %>% filter(db.strata == pb.strata, interval != "Outside") %>% pull(pr) %>% range() %>% round(., 0) %>% paste(., collapse = " and ")` (Figure \@ref(fig:agreementplot)). The use of position based station assignment to strata led to removal of `r removed_stn %>% filter(reason == "Position") %>% nrow()` stations that were included in the depth-latitude based assignment (Figure \@ref(fig:removalmap)). 
+
+```{r, differenceplot, echo = FALSE, fig.cap = "Bottom depth at start of trawling for stations that did not get assigned to the same depth strata between depth-latitude- and position-based assignement. Position-based strata are shown on the x-axis together with the depth interval (grey bar). Dots represent stations. The color of dots indicates position-based strata."}
+
+ggplot(tmp4, aes(x = interval, y = bottomdepthstart, fill = interval)) +
+  geom_blank() +
+  geom_segment(
+    data = bind_cols(
+      interval = factor(levels(stn$interval), levels(tmp4$interval)), 
+      bind_rows(lapply(strsplit(levels(stn$interval), "-"), 
+                       function(x) {
+                         as.data.frame(rbind(as.numeric(x)))
+                       }))
+      
+    ),
+    aes(x = interval, xend = interval, y = V1, yend = V2),
+    color = "grey", size = 10
+  ) +
+  geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 10, dotsize = 1) +
+  labs(x = "Position-based depth strata", 
+       y = "Bottom depth at start of trawling (m)") +
+  scale_y_continuous(breaks = seq(100,2000, 100)) +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+```{r, agreementplot, echo = FALSE, fig.cap = "Percent agreement in station allocation to strata between the depth-latitude-based (current assessment) and position-based (StoX) assignment. Size of the bubbles and number inside them refer to the percentage. Fill of the bubbles refer to number of stations. The figure contains all stations sampled during the EggaN survey 1004-2021. Geostrata are shown vertically and depth intervals horizontally.", fig.height = 6}
+
+tmp3 %>% filter(db.strata == pb.strata) %>%
+  mutate(geostrata = sapply(strsplit(db.strata, " "), "[[", 1),
+         interval = sapply(strsplit(db.strata, " "), "[[", 2)) %>%
+  mutate(interval =
+           factor(interval,
+                  levels = c(levels(pols$strata$interval), "Outside"))) %>% 
+  ggplot(., aes(x = 1, y = 1)) +
+  geom_point(aes(size = pr, color = n)) +
+  geom_text(aes(label = round(pr, 0)), size = ggOceanMaps::FS(10),
+            fontface = 2) +
+  scale_size("Percent\nagreement", range = c(5,20)) +
+  scale_color_distiller("Number of\nstations", palette = "Spectral") +
+  facet_grid(interval ~ geostrata) +
+  theme_void() +
+  #guides(color= guide_legend(nrow = 1), size=guide_legend(nrow = 1)) +
+  theme(legend.position = "bottom",
+        legend.box="vertical", legend.margin=margin())
+```
 
 ```{r, removalmap, class.source = 'fold-hide', fig.cap = "Position of EggaN survey stations removed from survey index calculations. The color indicates the reason for removal: depth = the recorded bottom depth is outside the depth strata, outside = position of the station is outside the geostrata, position = position of the station is outside the strata due to impression in bathymetry model and strata estimation or due to wrongly recorded coordinates. Grey dots indicate stations included in survey index calculations. The figure contains data from all years (1994-2021)."}
+
 p <- basemap(data = removed_stn) +
   geom_sf(data = pols$strata %>% sf::st_union(), fill = NA, color = "black") +
   geom_spatial_point(data = stn, aes(x = longitudestart, y = latitudestart), size = 0.5, color = "grey") +
@@ -281,15 +405,116 @@ p <- basemap(data = removed_stn) +
 reorder_layers(p)
 ```
 
-Percent agreement between old and new methods figure (geostrata, depth)
+Number of differently assigned stations / year
 
-Depth interval difference figure (how they get assigned)
 
 ## Difference in survey index
 
 The reconstructed survey index using depth- and latitude-based station assignment to strata and the original strata areas had a correlation of `r round(cor(surv_diff$value, surv_diff$reconst), 3)` with the official EggaN survey index used in the assessment model. The average annual difference between these indices was `r round(mean(surv_diff$diff)*1000, 0)` tons and standard deviation `r round(sd(surv_diff$diff)*1000, 0)` tons. While these differences may sound large, for comparison purposes the official and reconstructed survey indices were practically identical. The difference is likely caused by a few stations being included/removed from survey index calculations differently and highlights the differences weighing by the area can cause to survey indices. Consequently, only the reconstructed survey indices are used in the comparison for consistency. 
 
+The difference between original and reconstructed strata areas on the index based on depth- and latitude station assignment was influenced by outliers. Strata with only a few stations per year had a high impact on the result  
+
 Difference between old and new area, depth based and position based assignment figure
+
+```{r, echo = FALSE, fig.cap = "Blup"}
+
+bind_rows(
+db_index %>% 
+  group_by(startyear) %>% 
+  summarise(value = sum(index)) %>% 
+  mutate(type = "No removal") %>% 
+  full_join(., old_area_old_assig) %>% 
+  mutate(diff = value - reconst),
+db_index %>% 
+  filter(n > 1) %>% 
+  group_by(startyear) %>% 
+  summarise(value = sum(index)) %>% 
+  mutate(type = "n > 1") %>% 
+  full_join(., old_area_old_assig) %>% 
+  mutate(diff = value - reconst),
+db_index %>% 
+  filter(n > 2) %>% 
+  group_by(startyear) %>% 
+  summarise(value = sum(index)) %>% 
+  mutate(type = "n > 2") %>% 
+  full_join(., old_area_old_assig) %>% 
+  mutate(diff = value - reconst),
+db_index %>% 
+  filter(n > 3) %>% 
+  group_by(startyear) %>% 
+  summarise(value = sum(index)) %>% 
+  mutate(type = "n > 3") %>% 
+  full_join(., old_area_old_assig) %>% 
+  mutate(diff = value - reconst),
+db_index %>% 
+  filter(n > 4) %>% 
+  group_by(startyear) %>% 
+  summarise(value = sum(index)) %>% 
+  mutate(type = "n > 4") %>% 
+  full_join(., old_area_old_assig) %>% 
+  mutate(diff = value - reconst)
+) %>% 
+  ggplot(., aes(x = startyear, y = diff, color = type)) +
+  geom_hline(yintercept = 0) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(1990, 2030, 5), limits = c(1994, NA),
+                     expand = c(0,0)) +
+  scale_y_continuous(expand = c(0.01, 0)) +
+  labs(x = "Year", y = "Biomass (1000 tons)", color = "Number of\nstations\nremoved") +
+  theme_bw() +
+  theme(#legend.position = "bottom",
+        plot.margin = unit(c(5.5,12,5.5,5.5), "pt"))
+```
+
+
+```{r, echo = FALSE, fig.cap = "Blap"}
+tmp5 <- bind_rows(
+pb_index %>% 
+  filter(n > 2) %>% 
+  group_by(type, startyear) %>% 
+  mutate(type = "Position\nreconst. area") %>% 
+  summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
+            n = sum(n), ci.min = value - 1.96*sd/sqrt(n), 
+            ci.max = value + 1.96*sd/sqrt(n)),
+db_index %>% 
+  filter(n > 2) %>% 
+  group_by(type, startyear) %>% 
+  mutate(type = "Depth-latitude\nreconst. area") %>% 
+  summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
+            n = sum(n), ci.min = value - 1.96*sd/sqrt(n), 
+            ci.max = value + 1.96*sd/sqrt(n)),
+old_area_old_assig %>% 
+  rename("value" = "reconst") %>% 
+  mutate(type = "Depth-latitude\noriginal area", .before = 1)
+)
+
+col_vec <- c("Depth-latitude\noriginal area" = "#FF5F68",
+             "Depth-latitude\nreconst. area" = "#82C893",
+             "Position\nreconst. area" = "#449BCF")
+
+ggplot(tmp5, aes(x = startyear, y = value, color = type)) +
+  geom_ribbon(
+    data = tmp5 %>% filter(type == "Position\nreconst. area"),
+              aes(x = startyear, ymin = ci.min, ymax = ci.max, fill = type), 
+    alpha = 0.1, color = NA) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = seq(1990, 2030, 5), limits = c(1994, NA),
+                     expand = c(0,0)) +
+  scale_y_continuous(expand = c(0.01, 0)) +
+  labs(x = "Year", y = "Biomass (1000 tons)", 
+       color = "Index\ntype", fill = "Index\ntype") +
+  guides(fill = "none") +
+  scale_color_manual(values = col_vec) +
+  scale_fill_manual(values = col_vec) + 
+  expand_limits(y = 0) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        plot.margin = unit(c(5.5,12,5.5,5.5), "pt"))
+```
+
+
+Number of stations per strata
 
 Impact of geo- and depth strata on the index figure
 
