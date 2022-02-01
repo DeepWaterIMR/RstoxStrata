@@ -25,6 +25,10 @@ library(kableExtra)
 knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 ```
 
+# Summary
+
+Blap
+
 Packages required to run the examples:
 
 ```{r}
@@ -51,27 +55,26 @@ official <- structure(
   class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -19L))
 ```
 
-
 # Introduction
 
-Fisheries assessment models use catch data and population trends to estimate the fishing quota (Total Allowable Catch, TAC), i.e., the safe or optimal biomass to remove from a population to ensure population continuity (sustainability). While catch data primarily govern the absolute levels in TAC estimates, population trends dictate the relative changes in TAC from year to year and help the assessment model differentiate fishing effort- and efficiency-related catch variations from actual population fluctuations. Therefore, estimating population trends is integral to fisheries assessment and can have considerable economic and ecologic consequences.  
+Fisheries assessment models use catch data and population trends to estimate the fishing quota (Total Allowable Catch, TAC), i.e., the safe or optimal biomass to remove from a population to ensure sustainable fishing. While catch data primarily govern the absolute levels in TAC estimates, population trends dictate the relative changes in TAC from year to year and help the assessment model differentiate fishing effort- and efficiency-related catch variations from actual population fluctuations. Therefore, estimating population trends is integral to fisheries assessment and can have considerable economic and ecologic consequences.  
 
 Estimating population trends requires deciphering how much fish there is in the sea, commonly done using survey indices tailored for a particular species, region, and sampling setup. In essence, these survey indices are estimated by summing up numbers or weights of fish within areas called strata. The strata model distribution of a stock within a particular region of interest - often delimited by political or population boundaries. Most survey indices use multiple strata, assuming that the abundance of a species, population structure, or sampling setup considerably differs within the region of interest. The formula for estimating the number (or weight) of fish within a stratum for gear that covers an area, such as trawls, multiplies an average number of fish per areal unit (=density) by area of the stratum. In other words, the density of fish in each stratum is weighted by the area. Since the area is a multiplier, it considerably impacts the outcome. Imprecision in the areal estimation of strata or missing samples within a stratum may greatly affect the estimated population trends and hence TAC. 
 
 Depth is among the best factors to describe the distribution of fish species [REFS]. Consequently, bottom depth intervals are commonly incorporated into strata to model the vertical distribution of a species. Using bottom depth can lead to imprecision in areal estimation for species that inhabit narrow depth ranges along the continental slopes, such as the Greenland halibut. Imprecision in the areal estimation stemming from poorly charted bathymetry and low or inconsistent model resolution can be an order of magnitude and directly proportional to survey index estimates. 
 
-Here we discuss pitfalls in making strata for survey indices and study the consequences of filtering disconnected regions from strata using synthetic populations and Northeast Arctic Greenland halibut as example data. We suggest a transparent framework to estimate strata from bathymetric grid data programmed to an R package called RstoxStrata, which is integrated into the StoX software for survey index calculation. While the framework is applied to bottom depth, it can be used for any gridded spatial data such as surface temperature, salinity, or modeled prey density. 
+Here we suggest a transparent framework to estimate strata from bathymetric grid data programmed to an R package called [RstoxStrata](https://deepwaterimr.github.io/RstoxStrata/), which is integrated into the [StoX software](https://stoxproject.github.io/) for survey index calculation. We discuss pitfalls in making strata for survey indices, allocating stations to strata and using them to calculate survey indices. We use the main survey for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf) as an example contrasting two approaches to allocate stations to strata: a bottom depth-latitude based approach used in the current assesment model, and a solely position-based approach used by the StoX software. While the framework is applied to bottom depth, it can be used for any gridded spatial data such as surface temperature, salinity, or modeled prey density. 
 
 # Material and methods
 
-The proposed way of defining strata here attempts to simplify the strata making. Further, the process is transparent and reproducible. The distribution of a species is modeled using two components: 1) geographic regions (rectangles, called geostrata) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution. The depth data are acquired from the highest openly available evenly gridded **depth model** at the time of writing, the [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2021 grid (approximately 1/4 nautical miles in the latitude direction). The *GEBCO_2021 Grid (ice surface elevation)* netCDF file is downloaded (4 Gb) and placed in a central location on the computer:
+The proposed way of defining strata attempts to simplify the strata making. Further, the process is transparent and reproducible. The distribution of a species is modeled using two components: 1) geographic regions (rectangles, called geostrata) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution. The depth data are acquired from the highest openly available evenly gridded **depth model** at the time of writing, the [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2021 grid (approximately 1/4 nautical miles in the latitude direction). The *GEBCO_2021 Grid (ice surface elevation)* netCDF file is downloaded (4 Gb) and placed in a central location on the computer:
 
 ```{r}
 link <- "~/Desktop/gebco_2021/GEBCO_2021.nc"
 ```
 
 
-We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Greenland halibut as an example. The survey and its strata system are used to estimate the primary stock index for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf). The original system assigns stations to strata based on latitude and gear depth [@Høines2008], while the StoX software uses position only in the assignment [@Johnsen2019] (Table \@ref(tab:origareas)). The calculus for the strata area used in the original system has been lost and is not reproducible. Since the new StoX based approach uses solely position in station allocation to strata, we need to define the longitude limits as well to mimic the old strata system.
+We use the "EggaNord" survey in the Northeast Atlantic spawning grounds of Greenland halibut as an example. The survey and its strata system are used to estimate the primary stock index for [Northeast Arctic Greenland halibut](https://www.ices.dk/sites/pub/Publication%20Reports/Advice/2021/2021/ghl.27.1-2.pdf). The original system assigns stations to strata based on latitude and bottom depth at the beginning of trawling [@Høines2008], while the StoX software uses position only in the assignment [@Johnsen2019] (Table \@ref(tab:origareas)). The calculus for areas of the strata used in the original system has been lost and is not reproducible. Since the new StoX based approach uses solely position in station allocation to strata, we need to define the longitude limits as well to mimic the old strata system.
 
 ```{r origareas, echo=FALSE, message=FALSE, warning=FALSE}
 data(eggan_ghl_original_strata)
@@ -85,17 +88,17 @@ x$lat.interval <- factor(x$lat.interval, levels = unique(x$lat.interval))
 x$depth.interval <- factor(x$depth.interval, levels = unique(x$depth.interval))
 
 tab <- pivot_wider(x, id_cols = "depth.interval", names_from = "lat.interval", values_from = "orig.nm2")
-names(tab)[names(tab) == "lat.interval"] <- ""
+names(tab)[names(tab) == "depth.interval"] <- ""
 
-kable(tab, caption = "Previously used strata system definition for NEA Greenland halibut. Latitude intervals given are along rows, depth intervals along columns and the numbers represent strata areas in square nautical miles.") %>%
+kable(tab, caption = "Previously used strata system definition for NEA Greenland halibut. Latitude intervals are given as columns, depth intervals as rows, and the numbers represent strata areas in square nautical miles.") %>%
   kable_styling(bootstrap_options = c("striped", "condensed"))
 ```
 
 ## Geostrata
 
-The geographic rectangles, called "**geostrata**", are defined as a data frame for the RstoxStrata package. Optionally, the first column of the data frame can define the names of the geostrata. The four following numeric columns are required and define the minimum longitude, maximum longitude, minimum latitude and maximum latitude for the rectangles, respectively (Figure \@ref(fig:geostrata)). The coordinates are defined in decimal degrees (EPSG:4326). 
+The geographic rectangles, called "**geostrata**", are defined as a data frame for the [RstoxStrata](https://deepwaterimr.github.io/RstoxStrata/) package. Optionally, the first column of the data frame can define the names of the geostrata. The four following numeric columns are required and define the minimum and maximum longitude as well as minimum and maximum latitude for the rectangles, respectively (Figure \@ref(fig:geostrata)). The coordinates are defined in decimal degrees ([WGS84 / EPSG:4326](https://epsg.io/4326)). 
 
-```{r geostrata, fig.cap = "A geostrata system attempting to mimic the EggaNord survey strata for Northeast Greenland halibut. The currently uses system uses latitude and gear depth for station allocation while the new StoX based approach uses position only."}
+```{r geostrata, fig.cap = "A geostrata system attempting to mimic the EggaNord survey strata for Northeast Greenland halibut. The official system uses latitude and bottom depth at the beginning of trawling for station allocation while the new StoX based approach uses position only."}
 geostrata.df <- data.frame(
   lon.min = c(3, 10, 10, 8),
   lon.max = c(16, 17.5, 17.5, 17.5),
@@ -116,13 +119,13 @@ depths.vec <- c(400, 500, 700, 1000, 1500)
 
 ## Strata estimation
 
-Since the GEBCO bathymetry model covers the entire world, it can be cut to the region of interest using the **boundary** argument. This argument accepts vectors with four numbers in the same order than geostrata (minimum and maximum longitude, minimum and maximum latitude). 
+The [GEBCO bathymetry model](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) covers the entire world. Clipping the grid to a region of interest greatly reduces up the computation time. The clipping is done using the **boundary** argument which accepts vectors with four numbers in the same order than geostrata (minimum and maximum longitude, minimum and maximum latitude). 
 
 ```{r}
 boundary.vec <- c(0, 17.5, 68, 80)
 ```
 
-These information can then be input into the [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. 
+These information can then be input into the [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function which performs the strata estimation. The function returns a `strataPolygon` object, which is a list containing **strata** and **geostrata** [sf](https://cran.r-project.org/web/packages/sf/index.html) polygon objects. `strataPolygon` objects have their own plotting method utilizing the [ggOceanMaps](https://cran.r-project.org/web/packages/ggOceanMaps/index.html) package, but you can also plot the `sf` objects using standard syntax. 
 
 ```{r, stratawithfrags, fig.cap = "Initial strata system for the EggaNord survey index containing fragments that increase the strata area", results='hide'}
 pols <- strataPolygon(
@@ -135,11 +138,11 @@ pols <- strataPolygon(
 plot(pols)
 ```
 
-The depth strata 400-500 m between geostrata B and C is large and exceeds regularly visited stations. The [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function accepts polygons as the `boundary` argument allowing manual tuning of the strata (Figures \@ref(fig:boundary) and \@ref(fig:strata)).
+The depth strata 400-500 m between geostrata B and C is large and exceeds regularly visited stations. The [`strataPolygon()`](https://deepwaterimr.github.io/RstoxStrata/reference/strataPolygon.html) function accepts polygons as the `boundary` argument allowing manual tuning of the strata (Figures \@ref(fig:boundary) and \@ref(fig:strata)). We formulate a spatial polygon using QGIS and tune the polygon such that the estimated area of C 400-500 m matches the official area. The polygon is included in the RstoxStrata package as example data:
 
 ```{r, boundary, fig.cap = "Spatial polygons can be used as the boundary argument within strataPolygons() to manually restrict the strata extend."}
-boundary <- sf::read_sf("../inst/shapes/boundary_shape.shp")
-# sf::read_sf(system.file("shapes", "boundary_shape.shp", package = "RstoxStrata"))
+boundary <- sf::read_sf(system.file("shapes", "boundary_shape.shp", package = "RstoxStrata"))
+
 ggOceanMaps::qmap(boundary)
 ```
 
@@ -160,7 +163,28 @@ plot(pols, facetted = TRUE)
 
 ## Survey index
 
-```{r, class.source = 'fold-hide'}
+Trawl data from the EggaNord survey was used to calculate the survey indices. Biomass of Greenland halibut in all trawl hauls taken during the survey from 1994 until 2021 are included in the [`data(eggan_ghl)`](https://deepwaterimr.github.io/RstoxStrata/reference/eggan_ghl.html) dataset. Swept area density ($\rho$, called density in the dataset) was calculated as biomass in kg per square nautical mile assuming 80 m as the effective fishing width for all trawls:
+
+$$\rho_i = (\frac{B_i [kg]}{d_i [nmi] * (80 [m]/1852 [m]) [nmi]}) [kg/nmi^2]$$
+Where *i* is a trawl station, $B_i$ biomass of Greenland halibut, and $d_i$ trawling distance on that stations. Units are given in square brackets. 
+
+Indices for each stratum were calculated as average $\rho$ for a stratum multiplied by area of the stratum. 
+
+$$ I_s = (A_s [nmi^2] \times \sum_{i=1}^n \frac{\rho_i [kg/nmi^2]}{n}) [kg]$$
+Where *s* is a stratum, $A_s$ area of that stratum, *i* a trawl station, and *n* number of stations within the stratum.
+
+The indices for each stratum were then summed up to formulate an annual survey index value. 
+
+$$ I_y = \sum_{s=1}^{n_s} I_s$$
+Where *y* is a year, *s* a stratum, and $n_s$ number of strata included in the survey index. This survey index is referred to as "recalculated" index to separate it from the official numbers that have directly been acquired from the assessment model. The recalculated index was compared to the official numbers to confirm the calculus.
+
+<!-- Write this when you know -->
+<!-- Confidence intervals for the survey indices were calculated from standard deviations using 0.025 and 0.975 quantiles from t-distribution ($\pm t_{n -1}(0.975) \times s/\sqrt(n)$). Variances were calculated separately for each stratum. The annual standard deviation for the index was calculated as square rooted summed variances ($s = \sqrt(\sum \sigma_{i}^2)$, where i is $\rho$ for a trawl station). -->
+
+The survey index calculations have been done using the hidden code under:
+
+<details><summary>Code for survey index calculations</summary>
+```{r code}
 data(eggan_ghl)
 
 stn <- eggan_ghl %>%
@@ -195,10 +219,7 @@ old_area_old_assig <- stn %>%
          "area" = "area.old") %>%
   group_by(startyear, geostrata.name, interval, area) %>%
   summarise(mean = mean(density), sd = sd(density), n = n()) %>%
-  mutate(index = area*mean/1e6,
-         index.sd = area*sd/1e6,
-         ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
-         ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
+  mutate(index = area*mean/1e6) %>%
   suppressWarnings() %>%
   ungroup() %>%
   group_by(startyear) %>%
@@ -226,6 +247,7 @@ pb_index <- stn %>%
          ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
          ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
   mutate(type = "Position", .after = "interval") %>% 
+  mutate(interval = factor(interval, levels = levels(stn$interval))) %>% 
   suppressWarnings() %>%
   ungroup()
 
@@ -242,17 +264,20 @@ db_index <- stn %>%
          ci.min.t = index - qt(1 - 0.025, (n - 1))*index.sd/sqrt(n),
          ci.max.t = index + qt(1 - 0.025, (n - 1))*index.sd/sqrt(n)) %>%
   mutate(type = "Depth-latitude", .after = "interval") %>% 
+  mutate(interval = factor(interval, levels = levels(stn$interval))) %>% 
   suppressWarnings() %>%
   ungroup()
 ```
+</details>
+
 
 # Results
 
 ## Difference in area
 
-The reconstructed strata areas were generally lower than the original except for the deepest 1000-1500 strata, the manually adjusted strata C 400-500, and geostrata A excluding the shallowest 400-500 strata  (Figure \@ref(fig:areadiff), Table \@ref(tab:areadifftab)). There are no obvious reasons for the difference but since the method for acquiring the original strata areas is lost and over a decade old, the reconstructed areas are likely more trustworthy than the old ones. 
+The reconstructed strata areas were lower than the original for approximately half of the strata (Figure \@ref(fig:areadiff), Table \@ref(tab:areadifftab)). Area of the deepest 1000-1500 strata, the manually adjusted strata C 400-500, geostrata A excluding the shallowest 400-500 strata, and strata B 700-1000 were within $\pm$ 7% of the original strata system. 
 
-```{r, areadiff, class.source = 'fold-hide', fig.cap = "Difference between the original and reconstructed strata area. A) The differences are shown as a scatter plot. Color refers to depth strata and letter to geostrata name. B) The differences are shown on a map. Color refers to percentage difference. Negative percentages mean larger original area than reconstructed area.", fig.height = 7.5}
+```{r, areadiff, echo = FALSE, fig.cap = "Difference between the original and reconstructed strata area. A) The differences are shown as a scatter plot. Color refers to depth strata and letter to geostrata name. B) The differences are shown on a map. Color refers to percentage difference. Negative percentages mean larger original area than reconstructed area.", fig.height = 7.5}
 
 x <- dplyr::full_join(
   eggan_ghl_original_strata %>% 
@@ -345,11 +370,11 @@ tmp4 <- stn %>%
   filter(depth.interval != interval) 
 ```
 
-Total of `r tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum()` stations (`r round(100*(tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum())/sum(tmp3$n), 1)`%) were assigned differently between depth-latitude- and position-based assignment. Stations were consequently assigned to the same geostrata, but assignment to depth strata differed. Most of these stations had a bottom depth close to the depth strata boundaries (Figure \@ref(fig:differenceplot)), although some had bottom depths that were far off from the depths estimated based on position. 
+Total of `r tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum()` stations (`r round(100*(tmp3 %>% filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% pull(n) %>% sum())/sum(tmp3$n), 1)`%) were assigned differently between depth-latitude- and position-based assignment. Stations were consistently assigned to the same geostrata, but assignment to depth strata differed. Most of these stations had a bottom depth close to the depth strata boundaries (Figure \@ref(fig:differenceplot)), although some had bottom depths that were far off from the depths estimated based on position. 
 
 The agreement between depth-latitude and position-based station assignment to strata varied between `r tmp3 %>% filter(db.strata == pb.strata, interval != "Outside") %>% pull(pr) %>% range() %>% round(., 0) %>% paste(., collapse = " and ")` (Figure \@ref(fig:agreementplot)). The use of position based station assignment to strata led to removal of `r removed_stn %>% filter(reason == "Position") %>% nrow()` stations that were included in the depth-latitude based assignment (Figure \@ref(fig:removalmap)). 
 
-```{r, differenceplot, echo = FALSE, fig.cap = "Bottom depth at start of trawling for stations that did not get assigned to the same depth strata between depth-latitude- and position-based assignement. Position-based strata are shown on the x-axis together with the depth interval (grey bar). Dots represent stations. The color of dots indicates position-based strata."}
+```{r, differenceplot, echo = FALSE, fig.cap = "Bottom depth at start of trawling for stations that did not get assigned to the same depth strata between depth-latitude- and position-based assignment. Position-based strata are shown on the x-axis together with the depth interval (grey bar). Dots represent stations. The color of dots indicates position-based strata."}
 
 ggplot(tmp4, aes(x = interval, y = bottomdepthstart, fill = interval)) +
   geom_blank() +
@@ -385,7 +410,7 @@ tmp3 %>% filter(db.strata == pb.strata) %>%
   geom_point(aes(size = pr, color = n)) +
   geom_text(aes(label = round(pr, 0)), size = ggOceanMaps::FS(10),
             fontface = 2) +
-  scale_size("Percent\nagreement", range = c(5,20)) +
+  scale_size("Percent\nagreement", range = c(7,25)) +
   scale_color_distiller("Number of\nstations", palette = "Spectral") +
   facet_grid(interval ~ geostrata) +
   theme_void() +
@@ -394,7 +419,7 @@ tmp3 %>% filter(db.strata == pb.strata) %>%
         legend.box="vertical", legend.margin=margin())
 ```
 
-```{r, removalmap, class.source = 'fold-hide', fig.cap = "Position of EggaN survey stations removed from survey index calculations. The color indicates the reason for removal: depth = the recorded bottom depth is outside the depth strata, outside = position of the station is outside the geostrata, position = position of the station is outside the strata due to impression in bathymetry model and strata estimation or due to wrongly recorded coordinates. Grey dots indicate stations included in survey index calculations. The figure contains data from all years (1994-2021)."}
+```{r, removalmap, echo = FALSE, fig.cap = "Position of EggaN survey stations removed from survey index calculations. The color indicates the reason for removal: depth = the recorded bottom depth is outside the depth strata; outside = position of the station is outside the geostrata; position = position of the station is outside the strata due to impression in bathymetry model and strata estimation or due to wrongly recorded coordinates; and both = both conditions 'depth' and 'outside' apply. Grey dots indicate stations included in survey index calculations. The figure contains data from all years (1994-2021)."}
 
 p <- basemap(data = removed_stn) +
   geom_sf(data = pols$strata %>% sf::st_union(), fill = NA, color = "black") +
@@ -405,97 +430,255 @@ p <- basemap(data = removed_stn) +
 reorder_layers(p)
 ```
 
-Number of differently assigned stations / year
-
+```{r, removalyears, echo = FALSE, fig.cap = "Number of EggaN stations per year that get assigned to different depth strata between the depth-latitude- and position-based regimes."}
+full_join(tmp1, tmp2) %>%
+  mutate(db.strata = paste(db.geostrata, db.interval),
+         pb.strata = paste(pb.geostrata, pb.interval)) %>%
+  group_by(startyear, db.strata, pb.strata) %>%
+  count() %>%
+  group_by(db.strata) %>%
+  mutate(total = sum(n),
+         pr = 100*n/total) %>%
+  mutate(geostrata = sapply(strsplit(db.strata, " "), "[[", 1),
+         interval = sapply(strsplit(db.strata, " "), "[[", 2)) %>%
+  mutate(interval =
+           factor(interval,
+                  levels = c(levels(pols$strata$interval), "Outside"))) %>% 
+  filter(db.strata != pb.strata, !grepl("Outside", db.strata)) %>% 
+  group_by(startyear) %>% 
+  summarise(n = sum(n)) %>% 
+  ggplot(., aes(x = startyear, y = n)) +
+  geom_col() +
+  labs(x = "Year", y = "Number of stations") +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_continuous(breaks = seq(1990, 2030, 5)) +
+  theme_classic()
+```
 
 ## Difference in survey index
 
-The reconstructed survey index using depth- and latitude-based station assignment to strata and the original strata areas had a correlation of `r round(cor(surv_diff$value, surv_diff$reconst), 3)` with the official EggaN survey index used in the assessment model. The average annual difference between these indices was `r round(mean(surv_diff$diff)*1000, 0)` tons and standard deviation `r round(sd(surv_diff$diff)*1000, 0)` tons. While these differences may sound large, for comparison purposes the official and reconstructed survey indices were practically identical. The difference is likely caused by a few stations being included/removed from survey index calculations differently and highlights the differences weighing by the area can cause to survey indices. Consequently, only the reconstructed survey indices are used in the comparison for consistency. 
+```{r, include = FALSE}
+tmp5 <- bind_rows(
+  pb_index %>% 
+    filter(n > 1) %>% 
+    group_by(type, startyear) %>% 
+    mutate(type = "Position\nreconst. area") %>% 
+    summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
+              n = sum(n), ci.min = value - qt(0.975, (n - 1))*sd/sqrt(n), 
+              ci.max = value + qt(0.975, (n - 1))*sd/sqrt(n)),
+  db_index %>% 
+    filter(n > 1) %>% 
+    group_by(type, startyear) %>% 
+    mutate(type = "Depth-latitude\nreconst. area") %>% 
+    summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
+              n = sum(n), ci.min = value - 1.96*sd/sqrt(n), 
+              ci.max = value + 1.96*sd/sqrt(n)),
+  old_area_old_assig %>% 
+    rename("value" = "reconst") %>% 
+    mutate(type = "Depth-latitude\noriginal area", .before = 1),
+  old_area_old_assig %>% rename("value" = "reconst") %>% mutate(type = "Check")
+)
 
-The difference between original and reconstructed strata areas on the index based on depth- and latitude station assignment was influenced by outliers. Strata with only a few stations per year had a high impact on the result  
+tmp6 <- bind_rows(
+  db_index %>% 
+    group_by(startyear) %>% 
+    summarise(value = sum(index)) %>% 
+    mutate(type = "No limit") %>% 
+    full_join(., old_area_old_assig) %>% 
+    mutate(diff = value - reconst),
+  db_index %>% 
+    filter(n > 1) %>% 
+    group_by(startyear) %>% 
+    summarise(value = sum(index)) %>% 
+    mutate(type = "n > 1") %>% 
+    full_join(., old_area_old_assig) %>% 
+    mutate(diff = value - reconst),
+  db_index %>% 
+    filter(n > 2) %>% 
+    group_by(startyear) %>% 
+    summarise(value = sum(index)) %>% 
+    mutate(type = "n > 2") %>% 
+    full_join(., old_area_old_assig) %>% 
+    mutate(diff = value - reconst),
+  db_index %>% 
+    filter(n > 3) %>% 
+    group_by(startyear) %>% 
+    summarise(value = sum(index)) %>% 
+    mutate(type = "n > 3") %>% 
+    full_join(., old_area_old_assig) %>% 
+    mutate(diff = value - reconst),
+  db_index %>% 
+    filter(n > 4) %>% 
+    group_by(startyear) %>% 
+    summarise(value = sum(index)) %>% 
+    mutate(type = "n > 4") %>% 
+    full_join(., old_area_old_assig) %>% 
+    mutate(diff = value - reconst)
+)
 
-Difference between old and new area, depth based and position based assignment figure
+tmp7 <- bind_rows(
+  db_index %>% 
+    group_by(startyear) %>% 
+    summarise(db = sum(index)) %>% 
+    full_join(., 
+              pb_index %>% 
+                group_by(startyear) %>% 
+                summarise(pb = sum(index))
+    ) %>% 
+    mutate(type = "No limit") %>% 
+    mutate(diff = db - pb),
+  db_index %>% 
+    filter(n > 1) %>% 
+    group_by(startyear) %>% 
+    summarise(db = sum(index)) %>% 
+    full_join(., 
+              pb_index %>% 
+                filter(n > 1) %>% 
+                group_by(startyear) %>% 
+                summarise(pb = sum(index))
+              ) %>% 
+    mutate(type = "n > 1") %>% 
+    mutate(diff = db - pb),
+  db_index %>% 
+    filter(n > 2) %>% 
+    group_by(startyear) %>% 
+    summarise(db = sum(index)) %>% 
+    full_join(., 
+              pb_index %>% 
+                filter(n > 2) %>% 
+                group_by(startyear) %>% 
+                summarise(pb = sum(index))
+              ) %>% 
+    mutate(type = "n > 2") %>% 
+    mutate(diff = db - pb),
+  db_index %>% 
+    filter(n > 3) %>% 
+    group_by(startyear) %>% 
+    summarise(db = sum(index)) %>% 
+    full_join(., 
+              pb_index %>% 
+                filter(n > 3) %>% 
+                group_by(startyear) %>% 
+                summarise(pb = sum(index))
+              ) %>% 
+    mutate(type = "n > 3") %>% 
+    mutate(diff = db - pb),
+  db_index %>% 
+    filter(n > 4) %>% 
+    group_by(startyear) %>% 
+    summarise(db = sum(index)) %>% 
+    full_join(., 
+              pb_index %>% 
+                filter(n > 4) %>% 
+                group_by(startyear) %>% 
+                summarise(pb = sum(index))
+              ) %>% 
+    mutate(type = "n > 4") %>% 
+    mutate(diff = db - pb)
+)
+```
 
-```{r, echo = FALSE, fig.cap = "Blup"}
+The reconstructed survey index using depth- and latitude-based station assignment to strata and the original strata areas had a Pearson correlation of `r round(cor(surv_diff$value, surv_diff$reconst), 3)` with the official EggaN survey index used in the assessment model (Figure \@ref(fig:compwithofficial)A). The average annual difference between these indices was `r round(mean(surv_diff$diff)*1000, 0)` tons and standard deviation `r round(sd(surv_diff$diff)*1000, 0)` tons (Figure \@ref(fig:compwithofficial)B). For comparison purposes the official and reconstructed survey indices were practically identical. The difference is likely caused by a few stations being included/removed from survey index calculations differently and highlights the differences weighing by the area can cause to survey indices. Only the reconstructed survey index is used in the comparison for consistency. 
 
-bind_rows(
-db_index %>% 
-  group_by(startyear) %>% 
-  summarise(value = sum(index)) %>% 
-  mutate(type = "No removal") %>% 
-  full_join(., old_area_old_assig) %>% 
-  mutate(diff = value - reconst),
-db_index %>% 
-  filter(n > 1) %>% 
-  group_by(startyear) %>% 
-  summarise(value = sum(index)) %>% 
-  mutate(type = "n > 1") %>% 
-  full_join(., old_area_old_assig) %>% 
-  mutate(diff = value - reconst),
-db_index %>% 
-  filter(n > 2) %>% 
-  group_by(startyear) %>% 
-  summarise(value = sum(index)) %>% 
-  mutate(type = "n > 2") %>% 
-  full_join(., old_area_old_assig) %>% 
-  mutate(diff = value - reconst),
-db_index %>% 
-  filter(n > 3) %>% 
-  group_by(startyear) %>% 
-  summarise(value = sum(index)) %>% 
-  mutate(type = "n > 3") %>% 
-  full_join(., old_area_old_assig) %>% 
-  mutate(diff = value - reconst),
-db_index %>% 
-  filter(n > 4) %>% 
-  group_by(startyear) %>% 
-  summarise(value = sum(index)) %>% 
-  mutate(type = "n > 4") %>% 
-  full_join(., old_area_old_assig) %>% 
-  mutate(diff = value - reconst)
-) %>% 
+```{r, compwithofficial, echo = FALSE, fig.cap = "Comparison between the official EggaN survey index used in the assessement and recalculated index using depth-latitude based assignment and official (old) strata areas. A) Scatter plot. The line indicates x = y (1-to-1 relationship). Numbers refer to the two first numbers in year. B) Official minus the reconstructed index."}
+
+p1 <- ggplot(surv_diff, aes(y = reconst, x = value, label = substr(year,3,4))) + 
+  geom_abline(slope = 1, intercept = 0) + 
+  geom_text() + 
+  labs(x = "The official depth-based index", y = "Recalculated depth-based index") +
+  theme_classic()
+
+p2 <- ggplot(surv_diff, aes(x = year, y = diff)) +
+  geom_col() +
+  labs(x = "Year", y = "Difference between the indices (1000 tons)") +
+  theme_bw()
+
+cowplot::plot_grid(p1, p2, labels = "AUTO")
+```
+
+The difference between original and reconstructed strata **areas** on the index based on depth- and latitude station assignment was influenced by outliers (Figure \@ref(fig:areainfl)). The best fit (Pearson correlation of `r tmp6 %>% filter(type == "n > 1") %>% summarise(cor = cor(value, reconst)) %>% pull(cor) %>% round(., 3)`) was acquired by removing strata with one station per year before summing up indices for each strata ($I_s$, Figure \@ref(fig:areainfl)B).  
+
+```{r, areainfl, echo = FALSE, fig.cap = "The influence of outliers on the difference between the depth-latitude-based indices calculated using the official (old) and reconstructed strata areas. Threshold for minimum number of stations per strata is indicated using color. A) Differences among years. B) Annual mean differences. Error bars indicate 95% confidence intervals assuming normal distribution."}
+
+p1 <- tmp6 %>% 
   ggplot(., aes(x = startyear, y = diff, color = type)) +
   geom_hline(yintercept = 0) +
   geom_line() +
   scale_x_continuous(breaks = seq(1990, 2030, 5), limits = c(1994, NA),
                      expand = c(0,0)) +
   scale_y_continuous(expand = c(0.01, 0)) +
-  labs(x = "Year", y = "Biomass (1000 tons)", color = "Number of\nstations\nremoved") +
+  labs(x = "Year", y = "Difference between depth-latitude-based indices (1000 tons)", color = "Minimum number\nof stations") +
   theme_bw() +
-  theme(#legend.position = "bottom",
+  theme(legend.position = "bottom",
         plot.margin = unit(c(5.5,12,5.5,5.5), "pt"))
+
+leg <- cowplot::get_legend(p1)
+
+p2 <- tmp6 %>% 
+  group_by(type) %>% 
+  summarise(mean = mean(diff), n = n(), ci = 1.96*(sd(diff)/n)) %>% 
+  ggplot(., aes(x = type, y = mean, ymin = mean - ci, ymax = mean + ci, fill = type)) + 
+  geom_col() +
+  geom_errorbar(width = 0.5) +
+  labs(x = "Minimum number of stations", y = "Mean annual difference +- 95% CI (1000 tons)") +
+  theme_classic() +
+  theme(legend.position = "none")
+
+ps <- cowplot::plot_grid(p1 + theme(legend.position = "none"), p2, labels = "AUTO")
+
+cowplot::plot_grid(ps, leg, ncol = 1, rel_heights = c(9,1))
+```
+
+Biadf
+
+```{r, assigmentinfl, echo = FALSE, fig.cap = "The influence of outliers on the difference between the depth-latitude- and position-based indices calculated using the reconstructed strata areas. Threshold for minimum number of stations per strata is indicated using color. A) Differences among years. B) Annual mean differences. Error bars indicate 95% confidence intervals assuming normal distribution."}
+
+p1 <- tmp7 %>% 
+  ggplot(., aes(x = startyear, y = diff, color = type)) +
+  geom_hline(yintercept = 0) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(1990, 2030, 5), limits = c(1994, NA),
+                     expand = c(0,0)) +
+  scale_y_continuous(expand = c(0.01, 0)) +
+  labs(x = "Year", y = "Difference between depth-latitude-based indices (1000 tons)", color = "Minimum number\nof stations") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        plot.margin = unit(c(5.5,12,5.5,5.5), "pt"))
+
+leg <- cowplot::get_legend(p1)
+
+p2 <- tmp7 %>% 
+  group_by(type) %>% 
+  summarise(mean = mean(diff), n = n(), ci = 1.96*(sd(diff)/n)) %>% 
+  ggplot(., aes(x = type, y = mean, ymin = mean - ci, ymax = mean + ci, fill = type)) + 
+  geom_col() +
+  geom_errorbar(width = 0.5) +
+  labs(x = "Minimum number of stations", y = "Mean annual difference +- 95% CI (1000 tons)") +
+  theme_classic() +
+  theme(legend.position = "none")
+
+ps <- cowplot::plot_grid(p1 + theme(legend.position = "none"), p2, labels = "AUTO")
+
+cowplot::plot_grid(ps, leg, ncol = 1, rel_heights = c(9,1))
 ```
 
 
-```{r, echo = FALSE, fig.cap = "Blap"}
-tmp5 <- bind_rows(
-pb_index %>% 
-  filter(n > 2) %>% 
-  group_by(type, startyear) %>% 
-  mutate(type = "Position\nreconst. area") %>% 
-  summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
-            n = sum(n), ci.min = value - 1.96*sd/sqrt(n), 
-            ci.max = value + 1.96*sd/sqrt(n)),
-db_index %>% 
-  filter(n > 2) %>% 
-  group_by(type, startyear) %>% 
-  mutate(type = "Depth-latitude\nreconst. area") %>% 
-  summarise(value = sum(index), sd = sqrt(sum(index.sd^2, na.rm = TRUE)), 
-            n = sum(n), ci.min = value - 1.96*sd/sqrt(n), 
-            ci.max = value + 1.96*sd/sqrt(n)),
-old_area_old_assig %>% 
-  rename("value" = "reconst") %>% 
-  mutate(type = "Depth-latitude\noriginal area", .before = 1)
-)
+
+Consequently, this alternative was used in depth-latitude and position-based station assignment comparisons.
+
+
+
+```{r, indexdiff, echo = FALSE, fig.cap = "Blap"}
 
 col_vec <- c("Depth-latitude\noriginal area" = "#FF5F68",
              "Depth-latitude\nreconst. area" = "#82C893",
-             "Position\nreconst. area" = "#449BCF")
+             "Position\nreconst. area" = "#449BCF",
+             "Check" = "black")
 
 ggplot(tmp5, aes(x = startyear, y = value, color = type)) +
   geom_ribbon(
     data = tmp5 %>% filter(type == "Position\nreconst. area"),
-              aes(x = startyear, ymin = ci.min, ymax = ci.max, fill = type), 
+    aes(x = startyear, ymin = ci.min, ymax = ci.max, fill = type), 
     alpha = 0.1, color = NA) +
   geom_line() +
   geom_point() +
@@ -521,3 +704,5 @@ Impact of geo- and depth strata on the index figure
 Correlation between geo- and depth strata figure
 
 # Discussion
+
+There are no obvious reasons for lower areas of the reconstructed strata but since the method for acquiring the original strata areas is lost and over a decade old, the reconstructed areas are likely more trustworthy than the old ones. 
