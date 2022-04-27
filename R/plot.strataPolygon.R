@@ -11,13 +11,13 @@
 
 ## Test parameters
 
-plot.strataPolygon <- function(x, basemap = TRUE, facetted = FALSE, ...) {
+plot.strataPolygon <- function(x, basemap = TRUE, facetted = FALSE, fill_color = "red", fill_alpha = 0.8, ...) {
 
   if(basemap) {
     if(facetted) {
       ggOceanMaps::basemap(data = x$geostrata, ...) +
-        ggplot2::geom_sf(data = x$strata, color = "red", fill = "red",
-                         size = ggOceanMaps::LS(0.1)) +
+        ggplot2::geom_sf(data = x$strata, color = fill_color, fill = fill_color,
+                         size = ggOceanMaps::LS(0.1), alpha = fill_alpha) +
         ggplot2::geom_sf(data = x$geostrata,
                          fill = NA, color = "black") +
         ggplot2::geom_sf_text(data = suppressWarnings(sf::st_centroid(x$geostrata)),
@@ -28,7 +28,7 @@ plot.strataPolygon <- function(x, basemap = TRUE, facetted = FALSE, ...) {
       ggOceanMaps::basemap(data = x$geostrata, ...) +
         ggplot2::geom_sf(data = x$strata,
                          ggplot2::aes(fill = interval, color = interval),
-                         alpha = 0.8, size = ggOceanMaps::LS(0.1)) +
+                         alpha = fill_alpha, size = ggOceanMaps::LS(0.1)) +
         ggplot2::geom_sf(data = x$geostrata,
                          fill = NA, color = "black") +
         ggplot2::geom_sf_text(data = suppressWarnings(sf::st_centroid(x$geostrata)),
@@ -43,8 +43,8 @@ plot.strataPolygon <- function(x, basemap = TRUE, facetted = FALSE, ...) {
     if(facetted) {
 
       ggplot2::ggplot() +
-        ggplot2::geom_sf(data = x$strata, color = "red", fill = "red",
-                         size = ggOceanMaps::LS(0.1)) +
+        ggplot2::geom_sf(data = x$strata, color = fill_color, fill = fill_color,
+                         size = ggOceanMaps::LS(0.1), alpha = fill_alpha) +
         ggplot2::geom_sf(data = x$geostrata,
                          fill = NA, color = "black") +
         ggplot2::geom_sf_text(data = suppressWarnings(sf::st_centroid(x$geostrata)),
@@ -58,7 +58,7 @@ plot.strataPolygon <- function(x, basemap = TRUE, facetted = FALSE, ...) {
       ggplot2::ggplot() +
         ggplot2::geom_sf(data = x$strata,
                          ggplot2::aes(fill = interval, color = interval),
-                         size = ggOceanMaps::LS(0.1)) +
+                         size = ggOceanMaps::LS(0.1), alpha = fill_alpha) +
         ggplot2::geom_sf(data = x$geostrata,
                          fill = NA, color = "black") +
         ggplot2::geom_sf_text(data = suppressWarnings(sf::st_centroid(x$geostrata)),

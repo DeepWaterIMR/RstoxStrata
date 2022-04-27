@@ -4,7 +4,14 @@
 \alias{plot.strataPolygon}
 \title{Plot a strata polygon object on a map}
 \usage{
-\method{plot}{strataPolygon}(x, basemap = TRUE, facetted = FALSE, ...)
+\method{plot}{strataPolygon}(
+  x,
+  basemap = TRUE,
+  facetted = FALSE,
+  fill_color = "red",
+  fill_alpha = 0.8,
+  ...
+)
 }
 \arguments{
 \item{x}{\code{strataPolygon} object from the \code{\link{strataPolygon}} function.}
