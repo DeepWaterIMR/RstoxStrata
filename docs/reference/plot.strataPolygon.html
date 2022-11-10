@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">RstoxStrata</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.10</span>
       </span>
     </div>
 
@@ -29,7 +29,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -63,20 +63,42 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="co"># S3 method for strataPolygon</span>
-<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, basemap <span class="op">=</span> <span class="cn">TRUE</span>, facetted <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for strataPolygon</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  basemap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  facetted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  fill_color <span class="op">=</span> <span class="st">"red"</span>,</span>
+<span>  fill_alpha <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>x</dt>
 <dd><p><code>strataPolygon</code> object from the <code><a href="strataPolygon.html">strataPolygon</a></code> function.</p></dd>
+
+
 <dt>basemap</dt>
 <dd><p>Logical. Should the polygons be plotted on a <code><a href="https://mikkovihtakari.github.io/ggOceanMaps/reference/basemap.html" class="external-link">basemap</a></code> from the ggOceanMaps package.</p></dd>
+
+
 <dt>facetted</dt>
 <dd><p>Logical indicating whether a facetted map should be returned instead of colored polygons overlaid on the same map.</p></dd>
+
+
+<dt>fill_color</dt>
+<dd><p>Character specifying the fill color of strata polygons if <code>facetted = TRUE</code>.</p></dd>
+
+
+<dt>fill_alpha</dt>
+<dd><p>Numeric between 0 and 1 specifying the tranparency of strata polygon fill.</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Additional parameters passed to <code><a href="https://mikkovihtakari.github.io/ggOceanMaps/reference/basemap.html" class="external-link">basemap</a></code>.</p></dd>
+
 </dl></div>
     <div id="see-also">
     <h2>See also</h2>
@@ -99,7 +121,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

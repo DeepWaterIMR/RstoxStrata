@@ -2,6 +2,8 @@
 ##' @description Plot method for \code{\link[=strataPolygon]{strataPolygon}} objects.
 ##' @param x \code{strataPolygon} object from the \code{\link{strataPolygon}} function.
 ##' @param basemap Logical. Should the polygons be plotted on a \code{\link[ggOceanMaps]{basemap}} from the ggOceanMaps package.
+##' @param fill_color Character specifying the fill color of strata polygons if \code{facetted = TRUE}.
+##' @param fill_alpha Numeric between 0 and 1 specifying the tranparency of strata polygon fill.
 ##' @param facetted Logical indicating whether a facetted map should be returned instead of colored polygons overlaid on the same map.
 ##' @param ... Additional parameters passed to \code{\link[ggOceanMaps]{basemap}}.
 ##' @method plot strataPolygon

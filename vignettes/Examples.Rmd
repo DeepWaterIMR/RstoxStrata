@@ -5,8 +5,10 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Examples}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -19,7 +21,7 @@ knitr::opts_chunk$set(collapse = TRUE,
                       
 )
 
-link <- "~/Desktop/gebco_2021/GEBCO_2021.nc" # Real link to bathymetry (required for file size calculus)
+link <- "~/Downloads/gebco_2022/GEBCO_2022.nc" # Real link to bathymetry (required for file size calculus)
 ```
 
 # Introduction
@@ -31,7 +33,7 @@ This document contains examples of strata systems generated for various species 
 We use [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2021 grid as bottom depth information to model the vertical distribution of the species. Since the file is `r round(file.size(link)/1e9, 1)` Gb, it is best to download the file to a central location on your computer and refer to that position instead of including the file in every project:
 
 ```{r, eval = FALSE}
-link <- "~/Desktop/gebco_2021/GEBCO_2021.nc" # Link to bathymetry data
+link <- "~/Downloads/gebco_2022/GEBCO_2022.nc" # Link to bathymetry data
 ```
 
 Packages required to run the examples:
@@ -43,6 +45,56 @@ library(ggOceanMaps)
 ```
 
 # Examples
+
+## Northeast Atlantic Greenland halibut
+
+The strata system has been made for the new [NEA Greenland halibut](https://www.ices.dk/community/groups/Pages/AFWG.aspx) assessment model to be reviewed in a benchmark in February 2023. The system combines all previous strata systems that were developed separately for each survey time series. Geostrata has been adjusted to survey coverage, approximate country borders and distribution of the species along the Norwegian Coast and in the Barents Sea. 
+
+```{r, results='hide'}
+geostrata.df <- read.table(
+  text =
+  "name lon.min lon.max lat.min lat.max
+1     A     0.0    10.0    62.0    64.0
+2     B     0.0    14.0    64.0    67.5
+3     C     8.0    18.0    67.5    70.0
+4     D    12.0    18.0    70.0    74.5
+5     E     4.0    16.8    74.5    77.0
+6     F     4.0    16.8    77.0    79.8
+7     G     0.0    25.0    79.8    83.0
+8     H    18.0    36.0    70.0    72.3
+9     I    18.0    36.0    72.3    74.5
+10    J    16.8    36.0    74.5    77.0
+11    K    25.0    36.0    77.0    83.0
+12    L    36.0    54.0    69.0    74.5
+13    M    36.0    54.0    74.5    77.0
+14    N    36.0    50.0    77.0    83.0
+15    O    50.0    80.0    77.0    83.0")
+
+plotGeostrata(geostrata.df)
+```
+
+Depth intervals from existing survey indices. Boundary vector encompassing the area of interest to reduce the processing time. 
+
+```{r, results='hide'}
+depths.vec <- c(100, 300, 400, 500, 700, 1000, 1500) # Depth strata
+boundary.vec <- c(0, 90, 62, 83.2) # Boundaries of the system
+```
+
+Fragment area (in $km^2$) is defined by trial and error. 
+
+```{r, results='hide'}
+strata <- strataPolygon(
+  bathy = link,
+  depths = depths.vec,
+  boundary = boundary.vec,
+  geostrata = geostrata.df,
+  fragment.area = 1e4
+)
+
+## Plot 
+
+plot(strata)
+```
 
 ## Greater argentine in the North Sea
 

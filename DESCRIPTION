@@ -1,8 +1,8 @@
 Package: RstoxStrata
 Type: Package
 Title: Define Strata for Survey Indices
-Version: 0.2.9
-Date: 2022-04-27
+Version: 0.2.10
+Date: 2022-11-10
 Authors@R: c(person("Mikko", "Vihtakari", email = "mikko.vihtakari@hi.no",
                   role = c("aut", "cre"), 
                   comment = c(affiliation = "Institute of Marine Research", 
@@ -11,6 +11,7 @@ URL: https://DeepWaterIMR.github.io/RstoxStrata/
 BugReports: https://github.com/DeepWaterIMR/RstoxStrata/issues
 Description: Define strata from bathymetric grids to calculate survey indices
   using StoX. The package can also be used outside the StoX framework.
+Depends: R (>= 3.5.0)
 Imports: 
     magrittr, dplyr, tibble, sf, raster, stars, smoothr, units, rmapshaper, 
     ggplot2, ggOceanMaps
@@ -18,5 +19,5 @@ Suggests: knitr, cowplot, kableExtra, tidyr
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 VignetteBuilder: knitr

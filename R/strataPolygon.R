@@ -75,7 +75,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   ### The geostrata argument
 
   if(is.null(geostrata)) {
-    if(class(boundary) == "numeric") {
+    if(inherits(boundary, "numeric")) {
       geostrata <- data.frame(lon.min = boundary[1],
                               lon.max = boundary[2],
                               lat.min = boundary[3],
@@ -355,7 +355,7 @@ strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.ar
   ## Column classes
 
   pol <- pol %>%
-    mutate(interval =
+    dplyr::mutate(interval =
              factor(as.character(interval),
                     levels = unique(as.character(pol$interval)))
            )

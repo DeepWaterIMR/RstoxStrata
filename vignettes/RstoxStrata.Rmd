@@ -25,9 +25,9 @@ library(kableExtra)
 knitr::opts_chunk$set(collapse = TRUE, message = FALSE, warning = FALSE, comment = "#>")
 ```
 
-# Summary
+<!-- # Summary -->
 
-Blap
+<!-- Blap -->
 
 Packages required to run the examples:
 
@@ -67,10 +67,10 @@ Here we suggest a transparent framework to estimate strata from bathymetric grid
 
 # Material and methods
 
-The proposed way of defining strata attempts to simplify the strata making. Further, the process is transparent and reproducible. The distribution of a species is modeled using two components: 1) geographic regions (rectangles, called geostrata) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution. The depth data are acquired from the highest openly available evenly gridded **depth model** at the time of writing, the [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2021 grid (approximately 1/4 nautical miles in the latitude direction). The *GEBCO_2021 Grid (ice surface elevation)* netCDF file is downloaded (4 Gb) and placed in a central location on the computer:
+The proposed way of defining strata attempts to simplify the strata making. Further, the process is transparent and reproducible. The distribution of a species is modeled using two components: 1) geographic regions (rectangles, called geostrata) are used to model the spatial distribution, and 2) bottom depth intervals within the geographic regions are used as a proxy of the vertical distribution. The depth data are acquired from the highest openly available evenly gridded **depth model** at the time of writing, the [General Bathymetric Chart of the Oceans](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) 15-arcsecond 2022 grid (approximately 1/4 nautical miles in the latitude direction). The *GEBCO_2022 Grid (ice surface elevation)* netCDF file is downloaded (4 Gb) and placed in a central location on the computer:
 
 ```{r}
-link <- "~/Desktop/gebco_2021/GEBCO_2021.nc"
+link <- "~/Downloads/gebco_2022/GEBCO_2022.nc"
 ```
 
 

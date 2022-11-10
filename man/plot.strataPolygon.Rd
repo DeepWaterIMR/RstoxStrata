@@ -20,6 +20,10 @@
 
 \item{facetted}{Logical indicating whether a facetted map should be returned instead of colored polygons overlaid on the same map.}
 
+\item{fill_color}{Character specifying the fill color of strata polygons if \code{facetted = TRUE}.}
+
+\item{fill_alpha}{Numeric between 0 and 1 specifying the tranparency of strata polygon fill.}
+
 \item{...}{Additional parameters passed to \code{\link[ggOceanMaps]{basemap}}.}
 }
 \description{
