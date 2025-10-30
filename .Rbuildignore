@@ -1,2 +1,15 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+<<<<<<< HEAD
+=======
+^README\.md$
+^README\.Rmd$
+^README\.html$
+^README_files$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^LICENSE$
+^NEWS\.md$
+>>>>>>> 567a965fb20297333fe9ee735844dda73fa57f7e

@@ -17,7 +17,8 @@
 
 ## Developmental code
 # bathy = link; depths = depths.vec; boundary = boundary.vec; geostrata = geostrata.df; fragment.area = 100; bathy.crs = 4326; silent = FALSE
-strataPolygon <- function(bathy, depths, boundary, geostrata = NULL, fragment.area = NULL, bathy.crs = 4326, silent = FALSE) {
+strataPolygon <- function(bathy, depths, boundary, geostrata = NULL,
+                          fragment.area = NULL, bathy.crs = 4326, silent = FALSE) {
 
   ## General checks ####
 
